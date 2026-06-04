@@ -547,12 +547,11 @@ bindEvents();
 
 /* ── CHECK EXISTING SESSION ── */
 async function checkExistingSession() {
-  // 1. Try localStorage first (fastest)
   var stored = localStorage.getItem("pinned_wallet");
 
-  // 2. If not in localStorage, silently check if wallet is already connected
-  //    eth_accounts returns connected accounts with NO permission prompt
+  // If nothing in localStorage, wait 600ms for wallet extension to inject then try eth_accounts
   if(!stored) {
+    await new Promise(function(r){ setTimeout(r, 600); });
     try {
       var prov = window.ethereum || window.okxwallet || null;
       if(prov) {
@@ -570,16 +569,18 @@ async function checkExistingSession() {
   try {
     var p = await getProfileByWallet(stored);
     if(p) {
-      wallet = stored;
+      wallet  = stored;
       myProfile = p;
       document.getElementById("mwallet").textContent = wallet.slice(0,6)+"..."+wallet.slice(-4);
       document.getElementById("ptb-w").textContent   = wallet.slice(0,6)+"..."+wallet.slice(-4);
-      var el = document.getElementById("l-welcome");
-      el.textContent = "Welcome back, " + p.username + " —";
-      el.style.display = "block";
-      document.getElementById("btn-conn").textContent = "Go to Map →";
+      // Show welcome state
+      var welcome = document.getElementById("l-welcome");
+      welcome.textContent = "Welcome back, " + p.username;
+      welcome.style.display = "block";
+      var btn = document.getElementById("btn-conn");
+      btn.textContent = "View Map";
     }
-  } catch(e){}
+  } catch(e) {}
 }
 
 /* ── BIND ALL EVENTS ── */
