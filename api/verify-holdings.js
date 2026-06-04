@@ -20,29 +20,32 @@ module.exports = async function(req, res) {
   }
 
   try {
+    // Fetch active collections
     const colRes = await fetch(
       SB_URL + '/rest/v1/collections?active=eq.true&select=id,name,contract_address',
       { headers: { 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY } }
     );
     const cols = await colRes.json();
-
     if (!Array.isArray(cols) || !cols.length) {
-      return res.status(200).json({ verified: [], debug: 'No active collections in DB' });
+      return res.status(200).json({ verified: [] });
     }
 
-    const results = await Promise.all(
-      cols.filter(c => c.contract_address).map(async c => {
-        try {
-          const r = await fetch(
-            `https://eth-mainnet.g.alchemy.com/nft/v3/${ALK}/isHolderOfCollection?wallet=${wallet}&contractAddress=${c.contract_address}`
-          );
-          const d = await r.json();
-          return d.isHolderOfCollection ? c.id : null;
-        } catch(e) { return null; }
-      })
-    );
+    const verified = [];
 
-    return res.status(200).json({ verified: results.filter(Boolean) });
+    for (const col of cols.filter(c => c.contract_address)) {
+      try {
+        // Use getNFTsForOwner endpoint — works on all Alchemy plans
+        const url = `https://eth-mainnet.g.alchemy.com/nft/v3/${ALK}/getNFTsForOwner?owner=${wallet}&contractAddresses[]=${col.contract_address}&withMetadata=false&limit=1`;
+        const r = await fetch(url);
+        const d = await r.json();
+        // If ownedNfts array has any results, wallet holds this collection
+        if (d.ownedNfts && d.ownedNfts.length > 0) {
+          verified.push(col.id);
+        }
+      } catch(e) { /* skip this collection */ }
+    }
+
+    return res.status(200).json({ verified });
 
   } catch (e) {
     return res.status(500).json({ error: e.message });
