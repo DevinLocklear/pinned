@@ -1,0 +1,128 @@
+/* ── PINNED GLOBAL STYLES ── */
+:root {
+  --black:    #0A0A0A;
+  --white:    #FFFFFF;
+  --charcoal: #1E1E1E;
+  --charcoal2:#2A2A2A;
+  --grey1:    #888888;
+  --grey2:    #444444;
+  --grey3:    #333333;
+  --acid:     #CAFF00;
+  --acid-dim: rgba(202,255,0,0.12);
+  --hot:      #FF3CAC;
+  --hot-dim:  rgba(255,60,172,0.12);
+  --electric: #00F5FF;
+  --elec-dim: rgba(0,245,255,0.1);
+  --blaze:    #FF6B00;
+  --volt:     #F5FF00;
+  --fd: 'Syne', sans-serif;
+  --fb: 'DM Sans', sans-serif;
+  --fm: 'DM Mono', monospace;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+html, body, #root {
+  width:100%; height:100%;
+  background:var(--black);
+  color:var(--white);
+  font-family:var(--fb);
+  overflow:hidden;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--charcoal2); border-radius:2px; }
+
+/* ── LEAFLET OVERRIDES ── */
+.leaflet-container { background:#0A0A0A; font-family:var(--fb); }
+.leaflet-control-zoom a {
+  background:var(--charcoal) !important;
+  color:var(--white) !important;
+  border-color:var(--charcoal2) !important;
+  font-size:16px !important;
+}
+.leaflet-control-zoom a:hover { background:var(--charcoal2) !important; }
+.leaflet-control-attribution {
+  background:rgba(10,10,10,0.7) !important;
+  color:var(--grey2) !important;
+  font-size:9px !important;
+}
+.leaflet-control-attribution a { color:var(--grey2) !important; }
+.leaflet-popup-content-wrapper {
+  background:var(--charcoal) !important;
+  border:1px solid var(--charcoal2) !important;
+  border-radius:12px !important;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6) !important;
+  padding:0 !important;
+  overflow:hidden;
+}
+.leaflet-popup-tip { background:var(--charcoal) !important; }
+.leaflet-popup-content { margin:0 !important; }
+.leaflet-popup-close-button { color:var(--grey1) !important; top:10px !important; right:12px !important; font-size:16px !important; }
+.leaflet-popup-close-button:hover { color:var(--white) !important; }
+
+/* ── CUSTOM MAP PINS ── */
+.pin-marker {
+  position:relative;
+  width:44px; height:44px;
+  border-radius:50%;
+  padding:2.5px;
+  cursor:pointer;
+  box-shadow:0 2px 12px rgba(0,0,0,0.6);
+  display:flex; align-items:center; justify-content:center;
+}
+.pin-inner {
+  width:100%; height:100%;
+  border-radius:50%;
+  overflow:hidden;
+  background:var(--charcoal);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px;
+}
+.pin-inner img { width:100%; height:100%; object-fit:cover; }
+.pin-count {
+  position:absolute;
+  bottom:-2px; right:-2px;
+  width:17px; height:17px;
+  border-radius:50%;
+  border:2px solid var(--black);
+  font-size:8px; font-weight:700;
+  font-family:var(--fm);
+  color:var(--black);
+  display:flex; align-items:center; justify-content:center;
+  z-index:2;
+}
+
+/* ── UTILITY ── */
+.font-display { font-family:var(--fd); }
+.font-mono    { font-family:var(--fm); }
+.truncate     { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp   { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+@keyframes spin     { to{transform:rotate(360deg)} }
+@keyframes slideIn  { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
+@keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+.fade-up  { animation:fadeUp  0.5s ease both; }
+.fade-in  { animation:fadeIn  0.4s ease both; }
+.slide-in { animation:slideIn 0.4s ease both; }
+.spinner  { animation:spin 0.7s linear infinite; }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  z-index:9999;
+  background:var(--charcoal); border:1.5px solid var(--charcoal2);
+  border-radius:50px; padding:10px 22px;
+  font-family:var(--fm); font-size:12px; font-weight:500;
+  color:var(--white); white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+  pointer-events:none;
+  animation:fadeUp 0.3s ease both;
+}
+.toast.ok  { border-color:var(--acid); color:var(--acid); }
+.toast.err { border-color:var(--hot);  color:var(--hot);  }
