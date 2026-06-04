@@ -686,8 +686,36 @@ async function doVerification() {
 
 /* ── SUPABASE ── */
 async function getProfileByWallet(w) {
-  var r=await sb.from("profiles").select("*, wallet_collections(collection_id, collections(id,name,color))").eq("wallet_address",w.toLowerCase()).maybeSingle();
-  return r.data||null;
+  var addr = w.toLowerCase();
+  // Try full query with collections join first
+  try {
+    var r = await sb.from("profiles")
+      .select("*, wallet_collections(collection_id, collections(id,name,color))")
+      .eq("wallet_address", addr)
+      .maybeSingle();
+    if(r.error) {
+      console.warn("Full query error:", r.error.message);
+    } else {
+      console.log("Profile lookup:", addr, "->", r.data ? r.data.username : "not found");
+      if(r.data) return r.data;
+    }
+  } catch(e) { console.warn("Full query exception:", e); }
+
+  // Fallback: simple query without join
+  try {
+    var r2 = await sb.from("profiles")
+      .select("*")
+      .eq("wallet_address", addr)
+      .maybeSingle();
+    if(r2.error) {
+      console.warn("Simple query error:", r2.error.message);
+    } else {
+      console.log("Simple lookup:", addr, "->", r2.data ? r2.data.username : "not found");
+    }
+    return r2.data || null;
+  } catch(e) { console.warn("Simple query exception:", e); }
+
+  return null;
 }
 
 async function loadLandingStats() {
