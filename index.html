@@ -843,27 +843,39 @@ async function loadMapData() {
 async function loadMarkers() {
   if(!MAP) return;
   try {
-    var res=await sb.from("profiles").select("*, wallet_collections(collection_id, collections(id,name,color))");
-    if(res.error) throw res.error;
-    profiles=res.data||[];
+    // Try full query with collections join
+    var res = await sb.from("profiles")
+      .select("*, wallet_collections(collection_id, collections(id,name,color))");
+
+    if(res.error) {
+      console.warn("Join query failed, trying simple query:", res.error.message);
+      // Fallback: load profiles without join
+      var res2 = await sb.from("profiles").select("*");
+      if(res2.error) throw res2.error;
+      profiles = res2.data||[];
+    } else {
+      profiles = res.data||[];
+    }
+
+    console.log("Profiles loaded:", profiles.length);
+
     Object.values(markers).forEach(function(m){MAP.removeLayer(m);}); markers={};
 
     var filtered;
     if(activeFilters.length===0) {
-      // General map — everyone
-      filtered=profiles;
+      filtered = profiles;
     } else {
-      // Only verified holders of ALL selected collections
-      filtered=profiles.filter(function(p){
-        var ids=(p.wallet_collections||[]).map(function(wc){return wc.collection_id;});
+      filtered = profiles.filter(function(p){
+        var ids = (p.wallet_collections||[]).map(function(wc){return wc.collection_id;});
         return activeFilters.every(function(f){return ids.includes(f);});
       });
     }
 
+    console.log("Filtered:", filtered.length, "pins to render");
     filtered.forEach(addMarker);
     updateNavStats();
     buildLeaderboard(filtered);
-  } catch(e){ console.warn("loadMarkers:",e); }
+  } catch(e){ console.warn("loadMarkers error:", e); }
 }
 
 function addMarker(p) {
