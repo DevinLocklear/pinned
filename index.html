@@ -554,7 +554,7 @@ async function checkExistingSession() {
   //    eth_accounts returns connected accounts with NO permission prompt
   if(!stored) {
     try {
-      var prov = getProvider();
+      var prov = window.ethereum || window.okxwallet || null;
       if(prov) {
         var accounts = await prov.request({ method: "eth_accounts" });
         if(accounts && accounts.length) {
