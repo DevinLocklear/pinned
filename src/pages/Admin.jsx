@@ -159,7 +159,7 @@ export default function Admin() {
                   {col.slug} · {col.chain} · {col.contract_address ? col.contract_address.slice(0,10)+'...' : 'no contract'}
                 </div>
               </div>
-              <div style={{ display:'flex', gap:8' }}>
+              <div style={{ display:'flex', gap:8 }}>
                 <button onClick={() => handleToggle(col)} style={{
                   padding:'6px 14px', background:'transparent',
                   border:`1px solid ${col.active ? '#2A2A2A' : '#CAFF00'}`, borderRadius:6,
