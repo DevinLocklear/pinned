@@ -1,6 +1,3 @@
-const { createClient } = require('@supabase/supabase-js');
-const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-
 module.exports = async function(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -14,23 +11,49 @@ module.exports = async function(req, res) {
 
   if (action === 'ping') return res.status(200).json({ ok: true });
 
-  if (action === 'add_collection') {
-    const { data: col, error } = await sb.from('collections').insert(data).select().single();
-    if (error) return res.status(400).json({ error: error.message });
-    return res.status(200).json({ collection: col });
-  }
+  const SB_URL = process.env.SUPABASE_URL;
+  const SB_KEY = process.env.SUPABASE_ANON_KEY;
+  const headers = {
+    'Content-Type': 'application/json',
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + SB_KEY,
+    'Prefer': 'return=representation'
+  };
 
-  if (action === 'toggle_collection') {
-    const { error } = await sb.from('collections').update({ active: data.active }).eq('id', data.id);
-    if (error) return res.status(400).json({ error: error.message });
-    return res.status(200).json({ ok: true });
-  }
+  try {
+    if (action === 'add_collection') {
+      const r = await fetch(SB_URL + '/rest/v1/collections', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data)
+      });
+      const json = await r.json();
+      if (!r.ok) return res.status(400).json({ error: json.message || 'Insert failed' });
+      return res.status(200).json({ collection: Array.isArray(json) ? json[0] : json });
+    }
 
-  if (action === 'delete_collection') {
-    const { error } = await sb.from('collections').delete().eq('id', data.id);
-    if (error) return res.status(400).json({ error: error.message });
-    return res.status(200).json({ ok: true });
-  }
+    if (action === 'toggle_collection') {
+      const r = await fetch(SB_URL + '/rest/v1/collections?id=eq.' + data.id, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ active: data.active })
+      });
+      if (!r.ok) { const j = await r.json(); return res.status(400).json({ error: j.message }); }
+      return res.status(200).json({ ok: true });
+    }
 
-  return res.status(400).json({ error: 'Unknown action' });
+    if (action === 'delete_collection') {
+      const r = await fetch(SB_URL + '/rest/v1/collections?id=eq.' + data.id, {
+        method: 'DELETE',
+        headers
+      });
+      if (!r.ok) { const j = await r.json(); return res.status(400).json({ error: j.message }); }
+      return res.status(200).json({ ok: true });
+    }
+
+    return res.status(400).json({ error: 'Unknown action' });
+
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
 };
