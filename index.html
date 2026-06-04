@@ -690,7 +690,7 @@ async function connectWith(w) {
         showMyBtn(existing);
         loadMapData().then(function(){ silentReVerify(existing.wallet_address); });
         if(existing.latitude != null) MAP&&MAP.flyTo([existing.latitude,existing.longitude],6,{duration:1.5});
-        toast("Welcome back, "+existing.username+"!");
+        toast("Welcome back, "+existing.username+"!"); startHeartbeat();
       }, 400);
     } else {
       document.getElementById("cmsg").textContent = "Verifying your NFTs...";
@@ -819,7 +819,7 @@ async function saveProfile() {
       await sb.from("wallet_collections").insert(rows);
     }
     fo.textContent="You're on the map!"; fo.style.display="block";
-    toast("Pin dropped!");
+    toast("Pin dropped!"); startHeartbeat();
     setTimeout(function(){ showMap(); setTimeout(function(){ loadMapData(); showMyBtn(myProfile); if(coords.lat != null) MAP&&MAP.flyTo([coords.lat,coords.lng],6,{duration:1.8}); },400); },1200);
   } catch(e){ fe.textContent=e.message||"Failed to save."; fe.style.display="block"; }
   btn.disabled=false; document.getElementById("savetxt").textContent=myProfile?"Update Profile":"Drop My Pin";
@@ -1125,6 +1125,24 @@ async function silentReVerify(walletAddr) {
     if(ins.error) { return; }
     loadMarkers();
   } catch(e){ }
+}
+
+
+/* ── LIVE PRESENCE ── */
+var heartbeatTimer = null;
+async function startHeartbeat() {
+  if(!wallet || !sb) return;
+  async function ping() {
+    await sb.from("sessions").upsert({
+      wallet_address: wallet.toLowerCase(),
+      last_seen: new Date().toISOString()
+    }, { onConflict: "wallet_address" });
+  }
+  ping();
+  heartbeatTimer = setInterval(ping, 30000);
+}
+function stopHeartbeat() {
+  if(heartbeatTimer) clearInterval(heartbeatTimer);
 }
 
 /* ── SCREEN & TOAST ── */
