@@ -4,197 +4,305 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Pinned — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-body{background:#0A0A0A;color:#F0F0F0;font-family:"DM Sans",sans-serif;min-height:100vh;padding:40px 20px 80px;}
-.wrap{max-width:820px;margin:0 auto;}
-.logo{font-family:"Syne",sans-serif;font-weight:800;font-size:28px;letter-spacing:-.02em;margin-bottom:4px;}
-.logo .ed{color:#CAFF00;}
-.sub{font-family:"DM Mono",monospace;font-size:10px;color:#555;letter-spacing:.15em;text-transform:uppercase;margin-bottom:40px;}
-.card{background:#141414;border:1px solid #222;border-radius:12px;padding:24px;margin-bottom:24px;}
-.card-title{font-family:"DM Mono",monospace;font-size:9px;color:#555;letter-spacing:.2em;text-transform:uppercase;margin-bottom:20px;}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.fl{font-family:"DM Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#555;margin-bottom:5px;display:block;}
-.fi{width:100%;background:#0F0F0F;border:1.5px solid #222;border-radius:6px;color:#F0F0F0;font-size:13px;padding:10px 12px;font-family:"DM Sans",sans-serif;outline:none;transition:border-color .2s;}
-.fi:focus{border-color:#CAFF00;}
-select.fi{cursor:pointer;}
-.color-row{display:flex;gap:8px;align-items:center;}
-.color-row .fi{flex:1;}
-input[type=color]{width:38px;height:38px;border-radius:6px;border:1.5px solid #222;background:none;cursor:pointer;padding:2px;flex-shrink:0;}
-.btn-add{padding:12px 28px;background:#CAFF00;border:none;border-radius:6px;font-family:"Syne",sans-serif;font-weight:800;font-size:14px;color:#0A0A0A;cursor:pointer;transition:background .2s;}
-.btn-add:hover{background:#D4FF20;}
-.btn-add:disabled{opacity:.4;cursor:not-allowed;}
-.msg{font-family:"DM Mono",monospace;font-size:11px;padding:10px 14px;border-radius:6px;margin-bottom:14px;display:none;}
-.msg.ok{color:#CAFF00;background:rgba(202,255,0,.07);border:1px solid rgba(202,255,0,.2);}
-.msg.err{color:#FF3CAC;background:rgba(255,60,172,.07);border:1px solid rgba(255,60,172,.2);}
-.col-row{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#111;border:1px solid #222;border-radius:8px;margin-bottom:8px;transition:border-color .2s;}
-.col-row.inactive{opacity:.4;}
-.col-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
-.col-logo{width:32px;height:32px;border-radius:6px;object-fit:contain;background:#1A1A1A;padding:2px;}
-.col-name{font-family:"Syne",sans-serif;font-weight:700;font-size:14px;color:#fff;}
-.col-meta{font-family:"DM Mono",monospace;font-size:10px;color:#444;margin-top:2px;}
-.col-info{flex:1;min-width:0;}
-.col-btns{display:flex;gap:8px;flex-shrink:0;}
-.btn-tog{padding:5px 12px;background:transparent;border:1px solid #2E2E2E;border-radius:5px;font-family:"DM Mono",monospace;font-size:10px;color:#555;cursor:pointer;transition:all .2s;}
-.btn-tog:hover{border-color:#CAFF00;color:#CAFF00;}
-.btn-del{padding:5px 12px;background:transparent;border:1px solid rgba(255,60,172,.2);border-radius:5px;font-family:"DM Mono",monospace;font-size:10px;color:#FF3CAC;cursor:pointer;transition:all .2s;}
-.btn-del:hover{background:rgba(255,60,172,.08);}
-/* Login screen */
-#login{display:flex;align-items:center;justify-content:center;min-height:80vh;}
-.login-card{background:#141414;border:1px solid #222;border-radius:14px;padding:32px 28px;width:min(360px,90vw);}
-.login-title{font-family:"Syne",sans-serif;font-weight:800;font-size:24px;color:#fff;margin-bottom:4px;}
-.login-sub{font-family:"DM Mono",monospace;font-size:10px;color:#444;margin-bottom:24px;}
-.btn-login{width:100%;padding:12px;background:#CAFF00;border:none;border-radius:6px;font-family:"Syne",sans-serif;font-weight:800;font-size:16px;color:#0A0A0A;cursor:pointer;margin-top:12px;}
-#admin-panel{display:none;}
-.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;}
-a.back{font-family:"DM Mono",monospace;font-size:11px;color:#444;text-decoration:none;letter-spacing:.08em;}
-a.back:hover{color:#CAFF00;}
-.empty{padding:24px;text-align:center;font-family:"DM Mono",monospace;font-size:12px;color:#333;}
+:root {
+  --b:#0A0A0A; --w:#FFFFFF; --off:#F5F5F5;
+  --border:#E8E8E8; --border2:#D0D0D0; --grey:#888; --grey2:#BDBDBD;
+}
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--w); color:var(--b); font-family:"DM Sans",sans-serif; min-height:100vh; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+/* LOGIN */
+#login {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  padding:20px;
+}
+.login-card {
+  width:min(380px,100%); animation:slideUp .3s ease both;
+}
+.login-logo {
+  font-family:"Syne",sans-serif; font-weight:800; font-size:48px;
+  letter-spacing:-.03em; color:var(--b); margin-bottom:6px;
+}
+.login-sub {
+  font-family:"DM Mono",monospace; font-size:10px; color:var(--grey);
+  letter-spacing:.18em; text-transform:uppercase; margin-bottom:32px;
+}
+.login-label { font-family:"DM Mono",monospace; font-size:9px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--grey); margin-bottom:6px; display:block; }
+.login-input {
+  width:100%; background:var(--w); border:1.5px solid var(--border2); border-radius:2px;
+  color:var(--b); font-size:14px; padding:12px 14px;
+  font-family:"DM Sans",sans-serif; outline:none; transition:border-color .18s; margin-bottom:12px;
+}
+.login-input:focus { border-color:var(--b); }
+.login-err { font-family:"DM Mono",monospace; font-size:11px; color:#CC2020; margin-bottom:12px; display:none; }
+.btn-primary {
+  width:100%; padding:13px; background:var(--b); border:2px solid var(--b); border-radius:2px;
+  font-family:"Syne",sans-serif; font-weight:800; font-size:16px; letter-spacing:.04em;
+  text-transform:uppercase; color:var(--w); cursor:pointer; transition:all .18s;
+}
+.btn-primary:hover { background:var(--w); color:var(--b); }
+.btn-primary:disabled { opacity:.4; cursor:not-allowed; }
+
+/* ADMIN PANEL */
+#admin { display:none; }
+.topbar {
+  position:sticky; top:0; z-index:50;
+  background:rgba(255,255,255,.97); border-bottom:1.5px solid var(--border);
+  backdrop-filter:blur(12px); padding:0 32px; height:52px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.topbar-logo { font-family:"Syne",sans-serif; font-weight:800; font-size:20px; letter-spacing:-.02em; color:var(--b); }
+.topbar-right { display:flex; align-items:center; gap:16px; }
+.topbar-link {
+  font-family:"DM Mono",monospace; font-size:10px; color:var(--grey);
+  letter-spacing:.08em; text-decoration:none; transition:color .18s;
+}
+.topbar-link:hover { color:var(--b); }
+
+.content { max-width:860px; margin:0 auto; padding:40px 24px 80px; }
+.page-title { font-family:"Syne",sans-serif; font-weight:800; font-size:32px; letter-spacing:-.02em; color:var(--b); margin-bottom:4px; }
+.page-sub { font-family:"DM Mono",monospace; font-size:10px; color:var(--grey); letter-spacing:.15em; text-transform:uppercase; margin-bottom:36px; }
+
+.section { margin-bottom:32px; }
+.section-label {
+  font-family:"DM Mono",monospace; font-size:9px; font-weight:700;
+  letter-spacing:.2em; text-transform:uppercase; color:var(--grey);
+  padding-bottom:10px; border-bottom:1.5px solid var(--border); margin-bottom:20px;
+}
+
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px; }
+@media(max-width:600px) { .form-grid { grid-template-columns:1fr; } }
+.field { display:flex; flex-direction:column; }
+.fl { font-family:"DM Mono",monospace; font-size:9px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--grey); margin-bottom:5px; }
+.fi {
+  background:var(--w); border:1.5px solid var(--border); border-radius:2px;
+  color:var(--b); font-size:13px; padding:10px 12px;
+  font-family:"DM Sans",sans-serif; outline:none; transition:border-color .18s;
+}
+.fi:focus { border-color:var(--b); }
+.fi::placeholder { color:var(--grey2); }
+select.fi { cursor:pointer; }
+.color-row { display:flex; gap:8px; align-items:center; }
+.color-row .fi { flex:1; }
+input[type=color] { width:40px; height:40px; border:1.5px solid var(--border); border-radius:2px; background:none; cursor:pointer; padding:2px; flex-shrink:0; }
+
+.msg { font-family:"DM Mono",monospace; font-size:11px; padding:10px 14px; border-radius:2px; margin-bottom:14px; display:none; }
+.msg.ok  { color:#166534; background:#F0FDF4; border:1px solid #BBF7D0; }
+.msg.err { color:#CC2020; background:#FEF2F2; border:1px solid #FECACA; }
+
+.btn-add {
+  padding:11px 28px; background:var(--b); border:2px solid var(--b); border-radius:2px;
+  font-family:"Syne",sans-serif; font-weight:800; font-size:14px; letter-spacing:.04em;
+  text-transform:uppercase; color:var(--w); cursor:pointer; transition:all .18s;
+}
+.btn-add:hover { background:var(--w); color:var(--b); }
+.btn-add:disabled { opacity:.4; cursor:not-allowed; }
+
+/* COLLECTION ROWS */
+.col-row {
+  display:flex; align-items:center; gap:12px;
+  padding:14px 18px; border:1.5px solid var(--border); border-radius:2px;
+  margin-bottom:8px; transition:border-color .18s; background:var(--w);
+}
+.col-row:hover { border-color:var(--border2); }
+.col-row.inactive { opacity:.4; }
+.col-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.col-logo { width:32px; height:32px; border-radius:4px; object-fit:contain; background:var(--off); padding:2px; }
+.col-info { flex:1; min-width:0; }
+.col-name { font-family:"Syne",sans-serif; font-weight:700; font-size:14px; color:var(--b); }
+.col-meta { font-family:"DM Mono",monospace; font-size:10px; color:var(--grey2); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.col-btns { display:flex; gap:8px; flex-shrink:0; }
+.btn-sm {
+  padding:5px 12px; border-radius:2px; font-family:"DM Mono",monospace;
+  font-size:10px; font-weight:600; cursor:pointer; transition:all .18s;
+}
+.btn-toggle { background:transparent; border:1.5px solid var(--border); color:var(--grey); }
+.btn-toggle:hover { border-color:var(--b); color:var(--b); }
+.btn-delete { background:transparent; border:1.5px solid #FECACA; color:#CC2020; }
+.btn-delete:hover { background:#FEF2F2; }
+
+.empty { padding:32px; text-align:center; font-family:"DM Mono",monospace; font-size:12px; color:var(--grey2); border:1.5px dashed var(--border); border-radius:2px; }
+
+/* Stats strip */
+.stats-strip {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  border:1.5px solid var(--border); border-radius:2px; overflow:hidden; margin-bottom:32px;
+}
+.stat-cell { padding:16px 20px; border-right:1.5px solid var(--border); }
+.stat-cell:last-child { border-right:none; }
+.stat-n { font-family:"Syne",sans-serif; font-weight:800; font-size:28px; color:var(--b); line-height:1; }
+.stat-l { font-family:"DM Mono",monospace; font-size:9px; color:var(--grey); letter-spacing:.12em; text-transform:uppercase; margin-top:3px; }
 </style>
 </head>
 <body>
-<div class="wrap">
 
 <!-- LOGIN -->
 <div id="login">
   <div class="login-card">
-    <div class="login-title">PINN<span style="color:#CAFF00;">ED</span> Admin</div>
-    <div class="login-sub">Collection Management</div>
-    <label class="fl">Password</label>
-    <input class="fi" type="password" id="pw-input" placeholder="Enter admin password">
-    <div class="msg err" id="login-err">Incorrect password.</div>
-    <button class="btn-login" id="btn-login">Enter</button>
+    <div class="login-logo">PINNED</div>
+    <div class="login-sub">Admin Panel</div>
+    <label class="login-label">Password</label>
+    <input class="login-input" type="password" id="pw" placeholder="Enter admin password">
+    <div class="login-err" id="login-err">Incorrect password.</div>
+    <button class="btn-primary" id="btn-login">Enter</button>
   </div>
 </div>
 
 <!-- ADMIN PANEL -->
-<div id="admin-panel">
-  <div class="nav">
-    <div>
-      <div class="logo">PINN<span class="ed">ED</span> Admin</div>
-      <div class="sub">Collection Management</div>
+<div id="admin">
+  <div class="topbar">
+    <div class="topbar-logo">PINNED</div>
+    <div class="topbar-right">
+      <a class="topbar-link" href="/">← Back to map</a>
     </div>
-    <a class="back" href="/">&#8592; Back to map</a>
   </div>
 
-  <!-- Add collection -->
-  <div class="card">
-    <div class="card-title">Add New Collection</div>
-    <div class="grid2" style="margin-bottom:12px;">
-      <div><label class="fl">Collection Name *</label><input class="fi" type="text" id="c-name" placeholder="Garbage Friends"></div>
-      <div><label class="fl">OpenSea Slug *</label><input class="fi" type="text" id="c-slug" placeholder="garbage-friends-main"></div>
-      <div><label class="fl">Contract Address</label><input class="fi" type="text" id="c-contract" placeholder="0x..."></div>
-      <div><label class="fl">Chain</label>
-        <select class="fi" id="c-chain">
-          <option value="ethereum">Ethereum</option>
-          <option value="solana">Solana</option>
-          <option value="base">Base</option>
-          <option value="polygon">Polygon</option>
-        </select>
-      </div>
-      <div><label class="fl">Brand Color</label>
-        <div class="color-row">
-          <input class="fi" type="text" id="c-color" value="#CAFF00">
-          <input type="color" id="c-color-pick" value="#CAFF00">
+  <div class="content">
+    <div class="page-title">Admin Panel</div>
+    <div class="page-sub">Collection Management</div>
+
+    <!-- Stats -->
+    <div class="stats-strip">
+      <div class="stat-cell"><div class="stat-n" id="st-holders">—</div><div class="stat-l">Holders</div></div>
+      <div class="stat-cell"><div class="stat-n" id="st-cols">—</div><div class="stat-l">Collections</div></div>
+      <div class="stat-cell"><div class="stat-n" id="st-countries">—</div><div class="stat-l">Countries</div></div>
+    </div>
+
+    <!-- Add collection -->
+    <div class="section">
+      <div class="section-label">Add New Collection</div>
+      <div class="form-grid">
+        <div class="field"><label class="fl">Collection Name *</label><input class="fi" type="text" id="c-name" placeholder="Garbage Friends"></div>
+        <div class="field"><label class="fl">OpenSea Slug *</label><input class="fi" type="text" id="c-slug" placeholder="garbage-friends-main"></div>
+        <div class="field"><label class="fl">Contract Address</label><input class="fi" type="text" id="c-contract" placeholder="0x..."></div>
+        <div class="field"><label class="fl">Chain</label>
+          <select class="fi" id="c-chain">
+            <option value="ethereum">Ethereum</option>
+            <option value="solana">Solana</option>
+            <option value="base">Base</option>
+            <option value="polygon">Polygon</option>
+          </select>
         </div>
+        <div class="field"><label class="fl">Brand Color</label>
+          <div class="color-row">
+            <input class="fi" type="text" id="c-color" value="#CAFF00">
+            <input type="color" id="c-color-pick" value="#CAFF00">
+          </div>
+        </div>
+        <div class="field"><label class="fl">Logo URL</label><input class="fi" type="url" id="c-logo" placeholder="https://..."></div>
+        <div class="field"><label class="fl">Website</label><input class="fi" type="url" id="c-website" placeholder="https://..."></div>
+        <div class="field"><label class="fl">Twitter</label><input class="fi" type="text" id="c-twitter" placeholder="@handle"></div>
       </div>
-      <div><label class="fl">Logo URL</label><input class="fi" type="url" id="c-logo" placeholder="https://..."></div>
-      <div><label class="fl">Website</label><input class="fi" type="url" id="c-website" placeholder="https://..."></div>
-      <div><label class="fl">Twitter</label><input class="fi" type="text" id="c-twitter" placeholder="@handle"></div>
+      <div class="msg" id="add-msg"></div>
+      <button class="btn-add" id="btn-add">+ Add Collection</button>
     </div>
-    <div class="msg" id="add-msg"></div>
-    <button class="btn-add" id="btn-add">+ Add Collection</button>
-  </div>
 
-  <!-- Existing collections -->
-  <div class="card">
-    <div class="card-title">Collections (<span id="col-count">0</span>)</div>
-    <div id="col-list"><div class="empty">Loading...</div></div>
+    <!-- Collections list -->
+    <div class="section">
+      <div class="section-label">Collections (<span id="col-count">0</span>)</div>
+      <div id="col-list"><div class="empty">No collections yet. Add your first one above.</div></div>
+    </div>
   </div>
 </div>
 
-</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 var SB_URL = "https://dreqaqfqipnrjiqdutaf.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyZXFhcWZxaXBucmppcWR1dGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzA5NzIsImV4cCI6MjA5NjEwNjk3Mn0.b7itB8_BmfzJYcbOe9jAZwBys7bmjDpR_Bzpsg9R15U";
-// Set your admin password in Vercel env vars as ADMIN_PASSWORD
-// For local testing you can temporarily hardcode it here
-var ADMIN_PW = "";  // Leave blank — set via prompt on first load or env var
-
 var sb = window.supabase.createClient(SB_URL, SB_KEY);
-var authed = false;
+var pw = "";
 
-// Color picker sync
+// Color sync
 document.getElementById("c-color-pick").addEventListener("input", function(){ document.getElementById("c-color").value = this.value; });
 document.getElementById("c-color").addEventListener("input", function(){ if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) document.getElementById("c-color-pick").value = this.value; });
 
 // Login
 document.getElementById("btn-login").addEventListener("click", tryLogin);
-document.getElementById("pw-input").addEventListener("keydown", function(e){ if(e.key==="Enter") tryLogin(); });
+document.getElementById("pw").addEventListener("keydown", function(e){ if(e.key==="Enter") tryLogin(); });
 
-async function tryLogin(){
-  var pw = document.getElementById("pw-input").value;
-  // Verify via API route
-  try{
+async function tryLogin() {
+  var entered = document.getElementById("pw").value;
+  try {
     var res = await fetch("/api/admin", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({password:pw, action:"ping"})
+      body: JSON.stringify({ password: entered, action: "ping" })
     });
-    if(res.status === 401){ document.getElementById("login-err").style.display="block"; return; }
-    // 400 is fine — wrong action but auth passed
-    ADMIN_PW = pw; authed = true;
-    document.getElementById("login").style.display = "none";
-    document.getElementById("admin-panel").style.display = "block";
-    loadCollections();
-  }catch(e){
-    // Fallback: just load directly (useful before API route is deployed)
-    ADMIN_PW = pw; authed = true;
-    document.getElementById("login-err").style.display = "none";
-    document.getElementById("login").style.display = "none";
-    document.getElementById("admin-panel").style.display = "block";
-    loadCollections();
-  }
+    if(res.status === 401) { document.getElementById("login-err").style.display="block"; return; }
+  } catch(e) {}
+  pw = entered;
+  document.getElementById("login-err").style.display = "none";
+  document.getElementById("login").style.display = "none";
+  document.getElementById("admin").style.display = "block";
+  loadStats();
+  loadCollections();
 }
 
-async function loadCollections(){
+async function loadStats() {
+  try {
+    var [pr, cr] = await Promise.all([
+      sb.from("profiles").select("id,location_country", {count:"exact"}),
+      sb.from("collections").select("id").eq("active",true)
+    ]);
+    var p = pr.data||[];
+    var ctries = new Set(p.map(function(x){return x.location_country;}).filter(Boolean));
+    document.getElementById("st-holders").textContent   = pr.count || 0;
+    document.getElementById("st-cols").textContent      = cr.data?.length || 0;
+    document.getElementById("st-countries").textContent = ctries.size;
+  } catch(e){}
+}
+
+async function loadCollections() {
   var r = await sb.from("collections").select("*").order("added_at",{ascending:false});
   var cols = r.data||[];
   document.getElementById("col-count").textContent = cols.length;
   var list = document.getElementById("col-list");
   list.innerHTML = "";
-  if(!cols.length){ list.innerHTML='<div class="empty">No collections yet. Add your first one above.</div>'; return; }
+  if(!cols.length) {
+    list.innerHTML = '<div class="empty">No collections yet. Add your first one above.</div>';
+    return;
+  }
   cols.forEach(function(col){
     var row = document.createElement("div");
-    row.className = "col-row" + (col.active?"":" inactive");
-    row.style.borderColor = col.active ? col.color+"30" : "#222";
+    row.className = "col-row" + (col.active ? "" : " inactive");
+    if(col.active) row.style.borderColor = col.color + "60";
 
-    var dot = document.createElement("div"); dot.className="col-dot"; dot.style.background=col.color||"#CAFF00";
+    var dot = document.createElement("div"); dot.className="col-dot"; dot.style.background=col.color||"#888";
     row.appendChild(dot);
 
-    if(col.logo_url){ var logo=document.createElement("img"); logo.className="col-logo"; logo.src=col.logo_url; logo.onerror=function(){this.style.display="none";}; row.appendChild(logo); }
+    if(col.logo_url) {
+      var logo = document.createElement("img"); logo.className="col-logo"; logo.src=col.logo_url;
+      logo.onerror=function(){this.style.display="none";}; row.appendChild(logo);
+    }
 
     var info = document.createElement("div"); info.className="col-info";
     var nm = document.createElement("div"); nm.className="col-name"; nm.textContent=col.name;
     var meta = document.createElement("div"); meta.className="col-meta";
-    meta.textContent = [col.slug, col.chain, col.contract_address?col.contract_address.slice(0,12)+"...":"no contract"].join(" · ");
+    meta.textContent = [col.slug, col.chain, col.contract_address ? col.contract_address.slice(0,14)+"..." : "no contract"].join(" · ");
     info.appendChild(nm); info.appendChild(meta);
     row.appendChild(info);
 
     var btns = document.createElement("div"); btns.className="col-btns";
-    var tog = document.createElement("button"); tog.className="btn-tog";
-    tog.textContent = col.active?"Disable":"Enable";
+
+    var tog = document.createElement("button"); tog.className="btn-sm btn-toggle";
+    tog.textContent = col.active ? "Disable" : "Enable";
     tog.addEventListener("click", async function(){
       await sb.from("collections").update({active:!col.active}).eq("id",col.id);
-      loadCollections();
+      loadCollections(); loadStats();
     });
-    var del = document.createElement("button"); del.className="btn-del"; del.textContent="Delete";
+
+    var del = document.createElement("button"); del.className="btn-sm btn-delete"; del.textContent="Delete";
     del.addEventListener("click", async function(){
       if(!confirm('Delete "'+col.name+'"? This removes all verified holdings for this collection.')) return;
       await sb.from("collections").delete().eq("id",col.id);
-      loadCollections();
+      loadCollections(); loadStats();
     });
+
     btns.appendChild(tog); btns.appendChild(del);
     row.appendChild(btns);
     list.appendChild(row);
@@ -206,31 +314,35 @@ document.getElementById("btn-add").addEventListener("click", async function(){
   var slug     = document.getElementById("c-slug").value.trim();
   var contract = document.getElementById("c-contract").value.trim();
   var chain    = document.getElementById("c-chain").value;
-  var color    = document.getElementById("c-color").value.trim()||"#CAFF00";
+  var color    = document.getElementById("c-color").value.trim() || "#CAFF00";
   var logo     = document.getElementById("c-logo").value.trim();
   var website  = document.getElementById("c-website").value.trim();
   var twitter  = document.getElementById("c-twitter").value.trim();
   var msgEl    = document.getElementById("add-msg");
 
-  if(!name||!slug){ showMsg("Name and slug are required.","err"); return; }
-
+  if(!name||!slug) { showMsg("Name and slug are required.","err"); return; }
   this.disabled=true; this.textContent="Adding...";
-  try{
-    var r = await sb.from("collections").insert({name,slug,contract_address:contract||null,chain,color,logo_url:logo||null,website:website||null,twitter:twitter||null,active:true}).select().single();
+  try {
+    var r = await sb.from("collections").insert({
+      name, slug, contract_address:contract||null, chain, color,
+      logo_url:logo||null, website:website||null, twitter:twitter||null, active:true
+    }).select().single();
     if(r.error) throw r.error;
-    showMsg(name+" added successfully!","ok");
-    ["c-name","c-slug","c-contract","c-logo","c-website","c-twitter"].forEach(function(id){document.getElementById(id).value="";});
+    showMsg(name + " added successfully!", "ok");
+    ["c-name","c-slug","c-contract","c-logo","c-website","c-twitter"].forEach(function(id){
+      document.getElementById(id).value="";
+    });
     document.getElementById("c-color").value="#CAFF00";
     document.getElementById("c-color-pick").value="#CAFF00";
-    loadCollections();
-  }catch(e){ showMsg("Error: "+e.message,"err"); }
+    loadCollections(); loadStats();
+  } catch(e) { showMsg("Error: " + e.message, "err"); }
   this.disabled=false; this.textContent="+ Add Collection";
 });
 
-function showMsg(msg, type){
+function showMsg(msg, type) {
   var el = document.getElementById("add-msg");
   el.textContent=msg; el.className="msg "+type; el.style.display="block";
-  setTimeout(function(){el.style.display="none";},4000);
+  setTimeout(function(){ el.style.display="none"; }, 4000);
 }
 </script>
 </body>
