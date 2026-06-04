@@ -14,6 +14,7 @@
 }
 *,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
 body { background:var(--w); color:var(--b); font-family:"DM Sans",sans-serif; min-height:100vh; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.2)} }
 @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 
@@ -131,7 +132,7 @@ input[type=color] { width:40px; height:40px; border:1.5px solid var(--border); b
 
 /* Stats strip */
 .stats-strip {
-  display:grid; grid-template-columns:repeat(3,1fr);
+  display:grid; grid-template-columns:repeat(4,1fr);
   border:1.5px solid var(--border); border-radius:2px; overflow:hidden; margin-bottom:32px;
 }
 .stat-cell { padding:16px 20px; border-right:1.5px solid var(--border); }
@@ -169,7 +170,14 @@ input[type=color] { width:40px; height:40px; border:1.5px solid var(--border); b
 
     <!-- Stats -->
     <div class="stats-strip">
-      <div class="stat-cell"><div class="stat-n" id="st-holders">—</div><div class="stat-l">Holders</div></div>
+      <div class="stat-cell">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="stat-n" id="st-live">—</div>
+          <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite;flex-shrink:0;"></div>
+        </div>
+        <div class="stat-l">Live Now</div>
+      </div>
+      <div class="stat-cell"><div class="stat-n" id="st-holders">—</div><div class="stat-l">Total Holders</div></div>
       <div class="stat-cell"><div class="stat-n" id="st-cols">—</div><div class="stat-l">Collections</div></div>
       <div class="stat-cell"><div class="stat-n" id="st-countries">—</div><div class="stat-l">Countries</div></div>
     </div>
@@ -256,17 +264,23 @@ async function tryLogin() {
 
 async function loadStats() {
   try {
-    var [pr, cr] = await Promise.all([
+    var fiveMinAgo = new Date(Date.now() - 5*60*1000).toISOString();
+    var [pr, cr, lr] = await Promise.all([
       sb.from("profiles").select("id,location_country", {count:"exact"}),
-      sb.from("collections").select("id").eq("active",true)
+      sb.from("collections").select("id").eq("active",true),
+      sb.from("sessions").select("wallet_address").gte("last_seen", fiveMinAgo)
     ]);
     var p = pr.data||[];
     var ctries = new Set(p.map(function(x){return x.location_country;}).filter(Boolean));
-    document.getElementById("st-holders").textContent   = pr.count || 0;
-    document.getElementById("st-cols").textContent      = cr.data?.length || 0;
+    document.getElementById("st-live").textContent     = (lr.data||[]).length;
+    document.getElementById("st-holders").textContent  = pr.count || 0;
+    document.getElementById("st-cols").textContent     = cr.data?.length || 0;
     document.getElementById("st-countries").textContent = ctries.size;
   } catch(e){}
 }
+
+// Refresh live count every 30s
+setInterval(function(){ if(document.getElementById("st-live")) loadStats(); }, 30000);
 
 async function loadCollections() {
   var r = await sb.from("collections").select("*").order("added_at",{ascending:false});
