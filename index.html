@@ -688,11 +688,9 @@ async function connectWith(w) {
       myProfile=existing; showMap();
       setTimeout(function(){
         showMyBtn(existing);
-        loadMapData();
+        loadMapData().then(function(){ silentReVerify(existing.wallet_address); });
         if(existing.latitude != null) MAP&&MAP.flyTo([existing.latitude,existing.longitude],6,{duration:1.5});
         toast("Welcome back, "+existing.username+"!");
-        // Silently re-verify collections in background so filters stay current
-        silentReVerify(existing.wallet_address);
       }, 400);
     } else {
       document.getElementById("cmsg").textContent = "Verifying your NFTs...";
@@ -873,8 +871,6 @@ async function loadMapData() {
   await loadMarkers();
   updateNavStats();
   renderFilterPanel();
-  // Re-verify current user's collections now that we know which collections exist
-  if(wallet) silentReVerify(wallet);
 }
 
 async function loadMarkers() {
