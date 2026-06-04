@@ -37,26 +37,51 @@ export default function MapPage({ wallet, onConnectClick }) {
 
   // Verify wallet holdings when wallet connects
   useEffect(() => {
-    if (!wallet) return;
-    async function verify() {
-      try {
-        const profile = await getProfileByWallet(wallet);
-        setMyProfile(profile);
-        const verifiedIds = await verifyHoldings(wallet);
-        if (verifiedIds.length) {
-          await saveVerifiedCollections(wallet, verifiedIds);
-          const verifiedCols = collections.filter(c => verifiedIds.includes(c.id));
-          setVerifiedCollections(verifiedCols);
-        }
-        if (!profile) {
-          setVerifiedCollections(collections.filter(c => verifiedIds.includes(c.id)));
-          setShowForm(true);
-        }
-        await loadAll();
-      } catch(e) { console.warn('Verify error:', e); }
+  if (!wallet || collections.length === 0) return;
+
+  let cancelled = false;
+
+  async function verify() {
+    try {
+      const profile = await getProfileByWallet(wallet);
+      if (cancelled) return;
+
+      setMyProfile(profile);
+
+      const verifiedIds = await verifyHoldings(wallet);
+      if (cancelled) return;
+
+      if (!Array.isArray(verifiedIds)) return;
+
+      if (verifiedIds.length) {
+        await saveVerifiedCollections(wallet, verifiedIds);
+
+        const verifiedCols = collections.filter(c =>
+          verifiedIds.includes(c.id)
+        );
+
+        setVerifiedCollections(verifiedCols);
+      }
+
+      if (!profile) {
+        setVerifiedCollections(
+          collections.filter(c => verifiedIds.includes(c.id))
+        );
+        setShowForm(true);
+      }
+
+      await loadAll();
+    } catch (e) {
+      console.warn("Verify error:", e);
     }
-    verify();
-  }, [wallet, collections]);
+  }
+
+  verify();
+
+  return () => {
+    cancelled = true;
+  };
+}, [wallet]);
 
   async function loadAll() {
     const [p, c] = await Promise.all([getAllProfiles(), getActiveCollections()]);
@@ -65,16 +90,9 @@ export default function MapPage({ wallet, onConnectClick }) {
   }
 
   function setupRealtime() {
-    supabase.channel('map_activity')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles' }, (payload) => {
-        setProfiles(prev => [...prev, payload.new]);
-        addActivity(payload.new, 'joined');
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
-        setProfiles(prev => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p));
-        addActivity(payload.new, 'updated');
-      })
-      .subscribe();
+  if (!supabase?.channel) return;
+
+  supabase.channel('map_activity')
   }
 
   function addActivity(profile, type) {
