@@ -194,6 +194,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--w); color
 .mtb-r { display:flex; align-items:center; gap:10px; }
 .mtb-wallet { font-family:"DM Mono",monospace; font-size:10px; color:var(--grey); background:var(--off); border:1.5px solid var(--border); padding:4px 10px; border-radius:2px; cursor:pointer; transition:all .18s; }
 .mtb-wallet:hover { border-color:var(--b); color:var(--b); }
+.mtb-wallet:hover { border-color:var(--b); color:var(--b); }
 .btn-filter {
   display:flex; align-items:center; gap:6px;
   padding:6px 14px; background:var(--b); border:none; border-radius:2px;
@@ -596,6 +597,7 @@ function bindEvents() {
   document.getElementById("w-cancel").addEventListener("click", function(){ playClick(); document.getElementById("w-overlay").classList.remove("open"); });
   document.getElementById("savebtn").addEventListener("click", function(){ playClick(); saveProfile(); });
   document.getElementById("mbtn").addEventListener("click", function(){ playClick(); editProfile(); });
+  document.getElementById("mwallet").addEventListener("click", function(){ playClick(); editProfile(); });
   document.getElementById("f-pfp").addEventListener("input", function(){ prevPfp(this.value); });
   document.getElementById("f-pfp-file").addEventListener("change", handleUpload);
   document.getElementById("bvtw").addEventListener("click", function(){ playClick(); startVerify("tw"); });
@@ -871,6 +873,8 @@ async function loadMapData() {
   await loadMarkers();
   updateNavStats();
   renderFilterPanel();
+  // Re-verify current user's collections now that we know which collections exist
+  if(wallet) silentReVerify(wallet);
 }
 
 async function loadMarkers() {
