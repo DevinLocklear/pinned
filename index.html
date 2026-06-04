@@ -327,6 +327,19 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--w); color
 
 .spinner { display:inline-block; width:13px; height:13px; border:2px solid rgba(255,255,255,.3); border-top-color:var(--w); border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px; }
 .spinner-dark { border:2px solid rgba(0,0,0,.1); border-top-color:var(--b); }
+
+/* PROFILE MODAL */
+#pmodal { display:none; }
+#pmodal.open { display:flex; }
+.pm-social {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 12px; background:#F5F5F5; border-radius:2px;
+  text-decoration:none; transition:background .15s; cursor:pointer;
+}
+.pm-social:hover { background:#E8E8E8; }
+.pm-social-icon { width:18px; height:18px; flex-shrink:0; opacity:0.6; }
+.pm-social-label { font-family:"DM Mono",monospace; font-size:11px; color:#0A0A0A; font-weight:500; }
+.pm-social-val { font-family:"DM Mono",monospace; font-size:11px; color:#888; margin-left:auto; }
 </style>
 </head>
 <body>
@@ -390,6 +403,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--w); color
     </div>
     <div class="fb"><label class="fl">Username *</label><input class="fi" type="text" id="f-user" placeholder="cryptowanderer" maxlength="24"></div>
     <div class="fb"><label class="fl">Bio</label><textarea class="fta" id="f-bio" placeholder="Tell the community about yourself..." maxlength="160"></textarea></div>
+    <div class="fb"><label class="fl">OpenSea Profile URL</label><input class="fi" type="url" id="f-opensea" placeholder="https://opensea.io/your-username"></div>
     <div class="fb">
       <label class="fl">Twitter / X</label>
       <div class="vrow"><input class="fi" type="text" id="f-tw" placeholder="@handle"><button class="bver" id="bvtw">Verify</button></div>
@@ -476,6 +490,36 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--w); color
   <div id="mbtn">
     <img id="mbtn-img" src="" onerror="this.style.display='none'">
     <div><div id="mbtn-n">My Profile</div><div id="mbtn-s">Edit</div></div>
+  </div>
+</div>
+
+
+<!-- PROFILE MODAL -->
+<div id="pmodal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:800;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:20px;">
+  <div id="pmodal-card" style="background:#fff;border:1.5px solid #D0D0D0;border-radius:2px;width:min(380px,92vw);box-shadow:0 20px 60px rgba(0,0,0,0.15);overflow:hidden;animation:slideUp .22s ease both;">
+    <!-- Header strip -->
+    <div id="pmodal-header" style="height:6px;background:#0A0A0A;"></div>
+    <div style="padding:20px 20px 18px;">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+        <div id="pmodal-av" style="width:56px;height:56px;border-radius:50%;border:2px solid #E8E8E8;background:#F5F5F5;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
+            <div id="pmodal-name" style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#0A0A0A;letter-spacing:-.01em;"></div>
+            <div id="pmodal-badges" style="display:flex;gap:4px;"></div>
+          </div>
+          <div id="pmodal-loc" style="font-family:'DM Mono',monospace;font-size:10px;color:#888;"></div>
+        </div>
+        <button onclick="closePModal()" style="background:none;border:none;color:#888;font-size:20px;cursor:pointer;flex-shrink:0;padding:4px;line-height:1;">&#x2715;</button>
+      </div>
+      <div id="pmodal-bio" style="font-family:'DM Sans',sans-serif;font-size:13px;color:#666;line-height:1.6;margin-bottom:14px;display:none;"></div>
+      <!-- Collections -->
+      <div id="pmodal-cols-wrap" style="margin-bottom:14px;display:none;">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#BDBDBD;margin-bottom:7px;">Collections</div>
+        <div id="pmodal-cols" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+      <!-- Socials -->
+      <div id="pmodal-socials" style="display:flex;flex-direction:column;gap:6px;padding-top:12px;border-top:1.5px solid #E8E8E8;"></div>
+    </div>
   </div>
 </div>
 
@@ -758,7 +802,8 @@ async function saveProfile() {
   var pfp=document.getElementById("f-pfp").value.trim();
   var state=document.getElementById("f-state").value.trim();
   var coords=getCoords(country,state)||await nominatim(country,state)||{lat:0,lng:0};
-  var data={wallet_address:wallet.toLowerCase(),username:username,bio:bio,twitter_handle:tw,discord_handle:dc,avatar_url:pfp,location_country:country,location_state:state,latitude:coords.lat,longitude:coords.lng,twitter_verified:twV,discord_verified:dcV};
+  var opensea=document.getElementById("f-opensea").value.trim();
+  var data={wallet_address:wallet.toLowerCase(),username:username,bio:bio,twitter_handle:tw,discord_handle:dc,avatar_url:pfp,opensea_url:opensea,location_country:country,location_state:state,latitude:coords.lat,longitude:coords.lng,twitter_verified:twV,discord_verified:dcV};
   try {
     var r=await sb.from("profiles").upsert(data,{onConflict:"wallet_address"}).select().single();
     if(r.error) throw r.error;
@@ -885,14 +930,12 @@ function addMarker(p) {
     html:'<div class="pin-ring" style="'+ringStyle+'"><div class="pin-inner">'+(p.avatar_url?'<img src="'+p.avatar_url+'" onerror="imgFail(this)" style="width:100%;height:100%;object-fit:cover;">':'&#128100;')+'</div>'+badgeHtml+'</div>',
     iconSize:[44,44], iconAnchor:[22,22], popupAnchor:[0,-28]
   });
-  var colHtml=cols.map(function(c){return '<div class="pp-crow"><span class="pp-cdot" style="background:'+(c.color||"#888")+'"></span>'+c.name+'</div>';}).join("");
-  var badges=(p.twitter_verified?'<span class="vbadge vbadge-tw">&#120143;</span>':'')+(p.discord_verified?'<span class="vbadge vbadge-dc">DC</span>':'');
-  var loc=[p.location_state,p.location_country].filter(Boolean).join(", ");
-  var twHtml=p.twitter_handle?'<a class="pp-tw" href="https://x.com/'+p.twitter_handle.replace("@","")+'" target="_blank">&#120143; '+p.twitter_handle+'</a>':'';
-  var avHtml=p.avatar_url?'<img src="'+p.avatar_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="imgFail(this)">':'&#128100;';
-  var pop='<div class="ppbox"><div class="pp-top"><div class="pp-av">'+avHtml+'</div><div><div class="pp-name">'+(p.username||"Anon")+badges+'</div><div class="pp-loc">&#128205; '+loc+'</div></div></div>'+(p.bio?'<div class="pp-bio">'+p.bio+'</div>':'')+(colHtml?'<div class="pp-cl">Collections</div>'+colHtml:'')+twHtml+'</div>';
+  // popup replaced by openPModal(p)
   var m=L.marker([p.latitude,p.longitude],{icon:icon});
-  m.bindPopup(pop,{maxWidth:250});
+  m.on("click", function(e){
+    L.DomEvent.stopPropagation(e);
+    openPModal(p);
+  });
   m.addTo(MAP); markers[p.id]=m;
 }
 function imgFail(el){ el.outerHTML='<span style="font-size:18px">&#128100;</span>'; }
@@ -1062,6 +1105,107 @@ function showScreen(id){
 }
 var tt;
 function toast(msg,type){ var el=document.getElementById("toast"); el.textContent=msg; el.className="on"+(type?" "+type:""); clearTimeout(tt); tt=setTimeout(function(){el.className="";},3000); }
+/* ── PROFILE MODAL ── */
+function openPModal(p) {
+  var cols = p.wallet_collections || [];
+
+  // Avatar
+  var av = document.getElementById("pmodal-av");
+  av.innerHTML = "";
+  if(p.avatar_url) {
+    var img = document.createElement("img");
+    img.src = p.avatar_url;
+    img.onerror = function(){ av.textContent = "👤"; };
+    img.style.cssText = "width:100%;height:100%;object-fit:cover;";
+    av.appendChild(img);
+  } else { av.textContent = "👤"; }
+
+  // Header color — use first collection color or black
+  var hColor = (cols[0] && cols[0].collections && cols[0].collections.color) || "#0A0A0A";
+  document.getElementById("pmodal-header").style.background = hColor;
+
+  // Name
+  document.getElementById("pmodal-name").textContent = p.username || "Anon";
+
+  // Badges
+  var badges = document.getElementById("pmodal-badges"); badges.innerHTML = "";
+  if(p.twitter_verified) {
+    var b = document.createElement("span");
+    b.className = "vbadge vbadge-tw"; b.textContent = "𝕏"; badges.appendChild(b);
+  }
+  if(p.discord_verified) {
+    var b2 = document.createElement("span");
+    b2.className = "vbadge vbadge-dc"; b2.textContent = "DC"; badges.appendChild(b2);
+  }
+
+  // Location
+  var loc = [p.location_state, p.location_country].filter(Boolean).join(", ");
+  document.getElementById("pmodal-loc").textContent = loc ? "📍 " + loc : "";
+
+  // Bio
+  var bioEl = document.getElementById("pmodal-bio");
+  if(p.bio) { bioEl.textContent = p.bio; bioEl.style.display = "block"; }
+  else bioEl.style.display = "none";
+
+  // Collections
+  var colWrap = document.getElementById("pmodal-cols-wrap");
+  var colList  = document.getElementById("pmodal-cols");
+  colList.innerHTML = "";
+  var validCols = cols.map(function(wc){ return wc.collections; }).filter(Boolean);
+  if(validCols.length) {
+    validCols.forEach(function(c){
+      var badge = document.createElement("span");
+      badge.style.cssText = "padding:4px 12px;border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;border:1.5px solid "+c.color+";background:"+c.color+"15;color:"+c.color+";";
+      badge.textContent = c.name;
+      colList.appendChild(badge);
+    });
+    colWrap.style.display = "block";
+  } else {
+    colWrap.style.display = "none";
+  }
+
+  // Socials
+  var soc = document.getElementById("pmodal-socials"); soc.innerHTML = "";
+  function addSocial(icon, label, value, href) {
+    var a = document.createElement(href ? "a" : "div");
+    a.className = "pm-social";
+    if(href) { a.href = href; a.target = "_blank"; }
+    a.innerHTML = icon + '<span class="pm-social-label">' + label + '</span><span class="pm-social-val">' + value + '</span>';
+    soc.appendChild(a);
+  }
+
+  if(p.twitter_handle) addSocial(
+    '<svg class="pm-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>',
+    "Twitter / X", p.twitter_handle,
+    "https://x.com/" + p.twitter_handle.replace("@","")
+  );
+
+  if(p.discord_handle) addSocial(
+    '<svg class="pm-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>',
+    "Discord", p.discord_handle, null
+  );
+
+  if(p.opensea_url) addSocial(
+    '<svg class="pm-social-icon" viewBox="0 0 90 90" fill="currentColor"><path d="M45 0C20.151 0 0 20.151 0 45C0 69.849 20.151 90 45 90C69.849 90 90 69.849 90 45C90 20.151 69.849 0 45 0ZM22.203 46.512L22.359 46.261L34.782 27.961C34.926 27.737 35.255 27.761 35.363 28.001C37.036 31.771 38.468 36.461 37.801 39.251C37.519 40.429 36.739 42.001 35.862 43.451C35.748 43.651 35.622 43.851 35.489 44.041C35.422 44.136 35.308 44.191 35.189 44.191H22.489C22.247 44.191 22.101 43.929 22.203 46.512ZM74.893 49.16C74.893 49.289 74.82 49.405 74.707 49.466C73.951 49.862 71.613 51.126 70.681 52.431C68.263 55.851 66.43 60.881 62.343 60.881H46.0C39.556 60.881 34.329 55.621 34.329 49.141V48.921C34.329 48.751 34.466 48.609 34.637 48.609H48.203C48.399 48.609 48.549 48.789 48.539 48.981C48.469 50.201 48.699 51.431 49.219 52.541C50.263 54.761 52.521 56.211 54.951 56.211C56.271 56.211 60.853 56.211 65.199 48.981C65.479 48.501 65.749 48.009 66.009 47.511C66.099 47.339 66.279 47.231 66.469 47.231H74.519C74.739 47.231 74.899 47.439 74.893 49.16Z"/></svg>',
+    "OpenSea", "View profile", p.opensea_url
+  );
+
+  if(!p.twitter_handle && !p.discord_handle && !p.opensea_url) {
+    soc.innerHTML = '<div style="font-family:'DM Mono',monospace;font-size:10px;color:#BDBDBD;text-align:center;padding:6px 0;">No socials linked</div>';
+  }
+
+  document.getElementById("pmodal").classList.add("open");
+}
+
+function closePModal() {
+  document.getElementById("pmodal").classList.remove("open");
+}
+
+// Close on backdrop click
+document.getElementById("pmodal").addEventListener("click", function(e) {
+  if(e.target === this) closePModal();
+});
+
 </script>
 </body>
 </html>
