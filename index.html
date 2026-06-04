@@ -684,7 +684,14 @@ async function connectWith(w) {
     var existing = await getProfileByWallet(wallet);
     if(existing) {
       myProfile=existing; showMap();
-      setTimeout(function(){ showMyBtn(existing); loadMapData(); if(existing.latitude != null) MAP&&MAP.flyTo([existing.latitude,existing.longitude],6,{duration:1.5}); toast("Welcome back, "+existing.username+"!"); }, 400);
+      setTimeout(function(){
+        showMyBtn(existing);
+        loadMapData();
+        if(existing.latitude != null) MAP&&MAP.flyTo([existing.latitude,existing.longitude],6,{duration:1.5});
+        toast("Welcome back, "+existing.username+"!");
+        // Silently re-verify collections in background so filters stay current
+        silentReVerify(existing.wallet_address);
+      }, 400);
     } else {
       document.getElementById("cmsg").textContent = "Verifying your NFTs...";
       await loadCollections();
@@ -1096,6 +1103,32 @@ async function nominatim(country,state){
   var q=[state,country].filter(Boolean).join(", ");
   try{ var r=await fetch("https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(q)+"&limit=1"); var d=await r.json(); if(d&&d[0]) return{lat:parseFloat(d[0].lat)+jitter(),lng:parseFloat(d[0].lon)+jitter()}; }catch(e){}
   return null;
+}
+
+
+/* ── SILENT RE-VERIFY (runs in background on login) ── */
+async function silentReVerify(walletAddr) {
+  if(!collections.length) await loadCollections();
+  if(!collections.length) return;
+  try {
+    var verifiedIds = [];
+    for(var i=0; i<collections.length; i++) {
+      var col = collections[i];
+      if(!col.contract_address) continue;
+      try {
+        var r = await fetch("https://eth-mainnet.g.alchemy.com/nft/v3/"+ALK_KEY+"/isHolderOfCollection?wallet="+walletAddr+"&contractAddress="+col.contract_address);
+        var d = await r.json();
+        if(d.isHolderOfCollection) verifiedIds.push(col.id);
+      } catch(e){}
+    }
+    if(!verifiedIds.length) return;
+    // Update wallet_collections silently
+    await sb.from("wallet_collections").delete().eq("wallet_address", walletAddr.toLowerCase());
+    var rows = verifiedIds.map(function(id){ return { wallet_address: walletAddr.toLowerCase(), collection_id: id }; });
+    await sb.from("wallet_collections").insert(rows);
+    // Reload markers to reflect updated collections
+    loadMarkers();
+  } catch(e){ console.warn("silentReVerify:", e); }
 }
 
 /* ── SCREEN & TOAST ── */
