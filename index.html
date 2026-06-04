@@ -686,36 +686,17 @@ async function doVerification() {
 
 /* ── SUPABASE ── */
 async function getProfileByWallet(w) {
-  var addr = w.toLowerCase();
-  // Try full query with collections join first
   try {
     var r = await sb.from("profiles")
-      .select("*, wallet_collections(collection_id, collections(id,name,color))")
-      .eq("wallet_address", addr)
-      .maybeSingle();
-    if(r.error) {
-      console.warn("Full query error:", r.error.message);
-    } else {
-      console.log("Profile lookup:", addr, "->", r.data ? r.data.username : "not found");
-      if(r.data) return r.data;
-    }
-  } catch(e) { console.warn("Full query exception:", e); }
-
-  // Fallback: simple query without join
-  try {
-    var r2 = await sb.from("profiles")
       .select("*")
-      .eq("wallet_address", addr)
+      .eq("wallet_address", w.toLowerCase())
       .maybeSingle();
-    if(r2.error) {
-      console.warn("Simple query error:", r2.error.message);
-    } else {
-      console.log("Simple lookup:", addr, "->", r2.data ? r2.data.username : "not found");
-    }
-    return r2.data || null;
-  } catch(e) { console.warn("Simple query exception:", e); }
-
-  return null;
+    if(r.error) throw r.error;
+    return r.data || null;
+  } catch(e) {
+    console.warn("getProfileByWallet error:", e);
+    return null;
+  }
 }
 
 async function loadLandingStats() {
@@ -843,35 +824,42 @@ async function loadMapData() {
 async function loadMarkers() {
   if(!MAP) return;
   try {
-    // Try full query with collections join
-    var res = await sb.from("profiles")
-      .select("*, wallet_collections(collection_id, collections(id,name,color))");
+    // Load profiles and wallet_collections as separate queries — no join needed
+    var [profRes, wcRes, colRes] = await Promise.all([
+      sb.from("profiles").select("*"),
+      sb.from("wallet_collections").select("wallet_address, collection_id"),
+      sb.from("collections").select("id, name, color").eq("active", true)
+    ]);
 
-    if(res.error) {
-      console.warn("Join query failed, trying simple query:", res.error.message);
-      // Fallback: load profiles without join
-      var res2 = await sb.from("profiles").select("*");
-      if(res2.error) throw res2.error;
-      profiles = res2.data||[];
-    } else {
-      profiles = res.data||[];
-    }
+    if(profRes.error) throw profRes.error;
 
-    console.log("Profiles loaded:", profiles.length);
+    var allProfiles = profRes.data || [];
+    var allWC       = wcRes.data  || [];
+    var allCols     = colRes.data || [];
 
-    Object.values(markers).forEach(function(m){MAP.removeLayer(m);}); markers={};
+    // Build a lookup: collection_id -> collection object
+    var colMap = {};
+    allCols.forEach(function(c){ colMap[c.id] = c; });
 
-    var filtered;
-    if(activeFilters.length===0) {
-      filtered = profiles;
-    } else {
-      filtered = profiles.filter(function(p){
-        var ids = (p.wallet_collections||[]).map(function(wc){return wc.collection_id;});
-        return activeFilters.every(function(f){return ids.includes(f);});
-      });
-    }
+    // Attach wallet_collections to each profile
+    profiles = allProfiles.map(function(p) {
+      var wcs = allWC
+        .filter(function(wc){ return wc.wallet_address === p.wallet_address; })
+        .map(function(wc){ return { collection_id: wc.collection_id, collections: colMap[wc.collection_id] || null }; })
+        .filter(function(wc){ return wc.collections !== null; });
+      return Object.assign({}, p, { wallet_collections: wcs });
+    });
 
-    console.log("Filtered:", filtered.length, "pins to render");
+    Object.values(markers).forEach(function(m){ MAP.removeLayer(m); });
+    markers = {};
+
+    var filtered = activeFilters.length === 0
+      ? profiles
+      : profiles.filter(function(p){
+          var ids = p.wallet_collections.map(function(wc){ return wc.collection_id; });
+          return activeFilters.every(function(f){ return ids.includes(f); });
+        });
+
     filtered.forEach(addMarker);
     updateNavStats();
     buildLeaderboard(filtered);
