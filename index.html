@@ -714,23 +714,22 @@ async function loadCollections() {
 
 async function doVerification() {
   window._verifiedIds = [];
-  for(var i=0; i<collections.length; i++) {
-    var col = collections[i];
-    if(!col.contract_address) continue;
-    try {
-      var r = await fetch("https://eth-mainnet.g.alchemy.com/nft/v3/"+ALK_KEY+"/isHolderOfCollection?wallet="+wallet+"&contractAddress="+col.contract_address);
-      var d = await r.json();
-      if(d.isHolderOfCollection) window._verifiedIds.push(col.id);
-    } catch(e){}
-  }
+  if(!wallet) return;
+  try {
+    var res = await fetch("/api/verify-holdings?wallet=" + wallet);
+    if(res.ok) {
+      var d = await res.json();
+      window._verifiedIds = d.verified || [];
+    }
+  } catch(e){ console.warn("doVerification error:", e); }
   // Show verified badges in profile form
-  var bw=document.getElementById("vcol-badges"); bw.innerHTML="";
+  var bw = document.getElementById("vcol-badges"); bw.innerHTML = "";
   window._verifiedIds.forEach(function(id){
-    var col=collections.find(function(c){return c.id===id;});
+    var col = collections.find(function(c){ return c.id === id; });
     if(!col) return;
-    var s=document.createElement("span"); s.className="vcol-badge";
-    s.textContent=col.name;
-    s.style.cssText="border-color:"+col.color+";background:"+col.color+"18;color:"+col.color+";";
+    var s = document.createElement("span"); s.className = "vcol-badge";
+    s.textContent = col.name;
+    s.style.cssText = "border-color:"+col.color+";background:"+col.color+"18;color:"+col.color+";";
     bw.appendChild(s);
   });
 }
@@ -1108,30 +1107,20 @@ async function nominatim(country,state){
 
 /* ── SILENT RE-VERIFY (runs in background on login) ── */
 async function silentReVerify(walletAddr) {
-  if(!collections.length) await loadCollections();
-  console.log("silentReVerify: checking", collections.length, "collections for", walletAddr);
-  if(!collections.length) { console.warn("No collections in DB yet"); return; }
   try {
-    var verifiedIds = [];
-    for(var i=0; i<collections.length; i++) {
-      var col = collections[i];
-      console.log("Checking collection:", col.name, "contract:", col.contract_address);
-      if(!col.contract_address) { console.warn("No contract address for", col.name); continue; }
-      try {
-        var url = "https://eth-mainnet.g.alchemy.com/nft/v3/"+ALK_KEY+"/isHolderOfCollection?wallet="+walletAddr+"&contractAddress="+col.contract_address;
-        var r = await fetch(url);
-        var d = await r.json();
-        console.log(col.name, "holder check:", d.isHolderOfCollection, d);
-        if(d.isHolderOfCollection) verifiedIds.push(col.id);
-      } catch(e){ console.warn("Alchemy check failed:", e); }
-    }
+    // Call server-side API route — avoids CORS issues with Alchemy
+    var res = await fetch("/api/verify-holdings?wallet=" + walletAddr);
+    if(!res.ok) { console.warn("verify-holdings API error:", res.status); return; }
+    var d = await res.json();
+    var verifiedIds = d.verified || [];
     console.log("Verified collection IDs:", verifiedIds);
-    if(!verifiedIds.length) { console.warn("No verified collections found"); return; }
-    var del = await sb.from("wallet_collections").delete().eq("wallet_address", walletAddr.toLowerCase());
-    console.log("Delete result:", del.error || "OK");
+    if(!verifiedIds.length) { console.log("No verified collections for this wallet"); return; }
+    // Save to wallet_collections
+    await sb.from("wallet_collections").delete().eq("wallet_address", walletAddr.toLowerCase());
     var rows = verifiedIds.map(function(id){ return { wallet_address: walletAddr.toLowerCase(), collection_id: id }; });
     var ins = await sb.from("wallet_collections").insert(rows);
-    console.log("Insert result:", ins.error || "OK — saved", rows.length, "collections");
+    if(ins.error) { console.warn("wallet_collections insert error:", ins.error); return; }
+    console.log("Saved", rows.length, "verified collection(s) — reloading markers");
     loadMarkers();
   } catch(e){ console.warn("silentReVerify error:", e); }
 }
