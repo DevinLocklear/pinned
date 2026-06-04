@@ -1113,26 +1113,31 @@ async function nominatim(country,state){
 /* ── SILENT RE-VERIFY (runs in background on login) ── */
 async function silentReVerify(walletAddr) {
   if(!collections.length) await loadCollections();
-  if(!collections.length) return;
+  console.log("silentReVerify: checking", collections.length, "collections for", walletAddr);
+  if(!collections.length) { console.warn("No collections in DB yet"); return; }
   try {
     var verifiedIds = [];
     for(var i=0; i<collections.length; i++) {
       var col = collections[i];
-      if(!col.contract_address) continue;
+      console.log("Checking collection:", col.name, "contract:", col.contract_address);
+      if(!col.contract_address) { console.warn("No contract address for", col.name); continue; }
       try {
-        var r = await fetch("https://eth-mainnet.g.alchemy.com/nft/v3/"+ALK_KEY+"/isHolderOfCollection?wallet="+walletAddr+"&contractAddress="+col.contract_address);
+        var url = "https://eth-mainnet.g.alchemy.com/nft/v3/"+ALK_KEY+"/isHolderOfCollection?wallet="+walletAddr+"&contractAddress="+col.contract_address;
+        var r = await fetch(url);
         var d = await r.json();
+        console.log(col.name, "holder check:", d.isHolderOfCollection, d);
         if(d.isHolderOfCollection) verifiedIds.push(col.id);
-      } catch(e){}
+      } catch(e){ console.warn("Alchemy check failed:", e); }
     }
-    if(!verifiedIds.length) return;
-    // Update wallet_collections silently
-    await sb.from("wallet_collections").delete().eq("wallet_address", walletAddr.toLowerCase());
+    console.log("Verified collection IDs:", verifiedIds);
+    if(!verifiedIds.length) { console.warn("No verified collections found"); return; }
+    var del = await sb.from("wallet_collections").delete().eq("wallet_address", walletAddr.toLowerCase());
+    console.log("Delete result:", del.error || "OK");
     var rows = verifiedIds.map(function(id){ return { wallet_address: walletAddr.toLowerCase(), collection_id: id }; });
-    await sb.from("wallet_collections").insert(rows);
-    // Reload markers to reflect updated collections
+    var ins = await sb.from("wallet_collections").insert(rows);
+    console.log("Insert result:", ins.error || "OK — saved", rows.length, "collections");
     loadMarkers();
-  } catch(e){ console.warn("silentReVerify:", e); }
+  } catch(e){ console.warn("silentReVerify error:", e); }
 }
 
 /* ── SCREEN & TOAST ── */
