@@ -5,17 +5,16 @@ module.exports = async function(req, res) {
 
   const { password, action, data } = req.body || {};
 
-  // Check env vars are present
-  const SB_URL = process.env.SUPABASE_URL;
-  const SB_KEY = process.env.SUPABASE_ANON_KEY;
-  const ADMIN  = process.env.ADMIN_PASSWORD;
+  const SB_URL      = process.env.SUPABASE_URL;
+  const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY; // service_role key — bypasses RLS
+  const ADMIN       = process.env.ADMIN_PASSWORD;
 
-  if (!SB_URL || !SB_KEY || !ADMIN) {
+  if (!SB_URL || !SERVICE_KEY || !ADMIN) {
     return res.status(500).json({
       error: 'Missing env vars: ' + [
-        !SB_URL  && 'SUPABASE_URL',
-        !SB_KEY  && 'SUPABASE_ANON_KEY',
-        !ADMIN   && 'ADMIN_PASSWORD'
+        !SB_URL       && 'SUPABASE_URL',
+        !SERVICE_KEY  && 'SUPABASE_SERVICE_KEY',
+        !ADMIN        && 'ADMIN_PASSWORD'
       ].filter(Boolean).join(', ')
     });
   }
@@ -28,8 +27,8 @@ module.exports = async function(req, res) {
 
   const headers = {
     'Content-Type': 'application/json',
-    'apikey': SB_KEY,
-    'Authorization': 'Bearer ' + SB_KEY,
+    'apikey': SERVICE_KEY,
+    'Authorization': 'Bearer ' + SERVICE_KEY,
     'Prefer': 'return=representation'
   };
 
