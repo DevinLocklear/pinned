@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Pinned — The NFT Social Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+:root{
+  --black:#0A0A0A;--card:#141414;--card2:#1A1A1A;--border:#222;--border2:#2E2E2E;
+  --acid:#CAFF00;--hot:#FF3CAC;--electric:#00F5FF;--blaze:#FF6B00;--volt:#F5FF00;
+  --white:#F0F0F0;--grey:#666;--grey2:#3A3A3A;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--black);font-family:"DM Sans",sans-serif;color:var(--white);}
+.screen{position:fixed;inset:0;z-index:10;transition:opacity .4s ease;}
+.screen.hidden{opacity:0;pointer-events:none;}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes logoIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+@keyframes slideR{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+
+/* ══ LANDING ══ */
+#sl{background:var(--black);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;padding:20px 20px 80px;position:relative;}
+#sl::before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--card) 1px,transparent 1px),linear-gradient(90deg,var(--card) 1px,transparent 1px);background-size:48px 48px;opacity:.35;mask-image:radial-gradient(ellipse 85% 80% at 50% 40%,black,transparent);pointer-events:none;}
+.l-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(202,255,0,.05) 0%,transparent 70%);pointer-events:none;top:-120px;left:50%;transform:translateX(-50%);}
+.l-logo{font-family:"Syne",sans-serif;font-size:clamp(76px,16vw,148px);font-weight:800;letter-spacing:-.04em;line-height:.9;color:var(--white);position:relative;z-index:2;animation:logoIn .8s cubic-bezier(.16,1,.3,1) both;text-align:center;}
+.l-logo .ed{color:var(--acid);text-shadow:0 0 60px rgba(202,255,0,.35);}
+.l-tag{font-family:"DM Mono",monospace;font-size:clamp(9px,2.2vw,12px);letter-spacing:.24em;text-transform:uppercase;color:var(--grey);position:relative;z-index:2;margin-bottom:30px;animation:fadeUp .7s ease .3s both;}
+.btn-main{position:relative;z-index:2;padding:15px 54px;background:var(--acid);border:none;border-radius:6px;font-family:"Syne",sans-serif;font-weight:800;font-size:18px;letter-spacing:.02em;color:var(--black);cursor:pointer;transition:all .2s;box-shadow:0 0 40px rgba(202,255,0,.18);animation:fadeUp .7s ease .45s both;}
+.btn-main:hover{background:#D4FF20;transform:translateY(-2px);}
+.btn-main:active{transform:translateY(0);}
+.btn-main:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+.btn-explore{position:relative;z-index:2;margin-top:11px;background:transparent;border:none;font-family:"DM Mono",monospace;font-size:11px;color:var(--grey);cursor:pointer;letter-spacing:.08em;transition:color .2s;animation:fadeUp .7s ease .55s both;}
+.btn-explore:hover{color:var(--white);}
+.btn-mm{position:relative;z-index:2;margin-top:10px;padding:11px 30px;background:transparent;border:1.5px solid var(--border2);border-radius:6px;font-family:"Syne",sans-serif;font-weight:700;font-size:14px;color:var(--grey);cursor:pointer;transition:all .2s;display:none;text-decoration:none;animation:fadeUp .7s ease .6s both;}
+.btn-mm:hover{border-color:var(--acid);color:var(--acid);}
+.l-err{position:relative;z-index:2;margin-top:12px;font-family:"DM Mono",monospace;font-size:11px;color:var(--hot);background:rgba(255,60,172,.07);padding:9px 18px;border-radius:6px;border:1px solid rgba(255,60,172,.2);display:none;max-width:340px;text-align:center;}
+.l-stats{display:flex;margin-top:26px;background:rgba(20,20,20,.8);border:1px solid var(--border);border-radius:10px;overflow:hidden;position:relative;z-index:2;animation:fadeUp .7s ease .6s both;}
+.l-stat{padding:12px 22px;text-align:center;border-right:1px solid var(--border);}
+.l-stat:last-child{border-right:none;}
+.ls-n{font-family:"Syne",sans-serif;font-weight:800;font-size:26px;line-height:1;color:var(--acid);}
+.ls-l{font-family:"DM Mono",monospace;font-size:9px;color:var(--grey);letter-spacing:.12em;text-transform:uppercase;margin-top:3px;}
+.l-soc{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:24px;z-index:2;}
+.soc-a{font-family:"DM Mono",monospace;font-size:10px;color:var(--grey2);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;transition:color .2s;white-space:nowrap;}
+.soc-a:hover{color:var(--acid);}
+
+/* WALLET MODAL */
+.w-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:900;backdrop-filter:blur(6px);padding:20px;}
+.w-modal{background:var(--card2);border:1px solid var(--border2);border-radius:16px;padding:24px 20px 18px;width:min(320px,90vw);box-shadow:0 16px 48px rgba(0,0,0,.7);}
+.w-title{font-family:"Syne",sans-serif;font-weight:800;font-size:22px;color:var(--white);text-align:center;margin-bottom:18px;letter-spacing:-.01em;}
+.w-btn{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;background:#111;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s;margin-bottom:10px;}
+.w-btn:hover{border-color:var(--acid);background:rgba(202,255,0,.04);}
+.w-btn-ico{width:36px;height:36px;border-radius:8px;object-fit:contain;flex-shrink:0;}
+.w-btn-name{font-family:"Syne",sans-serif;font-weight:700;font-size:14px;color:var(--white);}
+.w-cancel{width:100%;padding:10px;background:transparent;border:1.5px solid var(--border);border-radius:8px;font-family:"DM Mono",monospace;font-size:11px;color:var(--grey);cursor:pointer;transition:all .2s;}
+.w-cancel:hover{border-color:var(--white);color:var(--white);}
+
+/* CHECKING */
+#sc{background:var(--black);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;}
+.c-logo{font-family:"Syne",sans-serif;font-weight:800;font-size:52px;letter-spacing:-.03em;color:rgba(255,255,255,.25);}
+.c-logo .ed{color:rgba(202,255,0,.5);}
+.c-ring{width:52px;height:52px;border-radius:50%;border:3px solid var(--border2);border-top-color:var(--acid);animation:spin .8s linear infinite;}
+.c-msg{font-family:"DM Mono",monospace;font-size:12px;color:var(--grey);letter-spacing:.1em;}
+
+/* PROFILE SCREEN */
+#sp{background:var(--black);display:flex;flex-direction:column;align-items:center;overflow-y:auto;}
+.ptb{width:100%;padding:12px 18px;background:rgba(10,10,10,.97);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(12px);position:sticky;top:0;z-index:10;flex-shrink:0;}
+.ptb-logo{font-family:"Syne",sans-serif;font-weight:800;font-size:20px;letter-spacing:-.02em;color:var(--white);}
+.ptb-logo .ed{color:var(--acid);}
+.ptb-w{font-family:"DM Mono",monospace;font-size:10px;color:var(--grey);background:var(--card);border:1px solid var(--border);padding:4px 10px;border-radius:4px;}
+.pfc{width:100%;max-width:480px;padding:26px 20px 40px;}
+.pf-title{font-family:"Syne",sans-serif;font-weight:800;font-size:clamp(28px,9vw,46px);line-height:1;color:var(--white);margin-bottom:5px;}
+.pf-title .ac{color:var(--acid);}
+.pf-sub{font-size:13px;color:var(--grey);margin-bottom:20px;}
+.vcol-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;min-height:0;}
+.vcol-badge{padding:5px 14px;border-radius:4px;font-size:11px;font-weight:600;font-family:"DM Mono",monospace;border:1.5px solid;}
+.fb{margin-bottom:16px;}
+.fl{font-family:"DM Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--grey);margin-bottom:6px;display:block;}
+.fi,.fta{width:100%;background:#0F0F0F;border:1.5px solid var(--border);border-radius:6px;color:var(--white);font-size:13px;padding:11px 14px;font-family:"DM Sans",sans-serif;outline:none;transition:border-color .2s;}
+.fi:focus,.fta:focus{border-color:var(--acid);}
+.fi::placeholder,.fta::placeholder{color:var(--grey2);}
+.fta{resize:vertical;min-height:68px;}
+.fh{font-size:10px;color:var(--grey2);margin-top:4px;}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fdiv{height:1px;background:var(--border);margin:20px 0;}
+.pfp-row{display:flex;gap:14px;align-items:flex-start;}
+.pfp-c{width:62px;height:62px;border-radius:50%;border:2px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;flex-shrink:0;}
+.pfp-c img{width:100%;height:100%;object-fit:cover;}
+.btn-upload{display:block;width:100%;padding:9px 12px;background:var(--card);border:1.5px dashed var(--border2);border-radius:6px;font-size:12px;font-weight:600;font-family:"DM Sans",sans-serif;color:var(--grey);cursor:pointer;text-align:center;margin-bottom:8px;transition:all .2s;}
+.btn-upload:hover{border-color:var(--acid);color:var(--acid);}
+.up-st{font-family:"DM Mono",monospace;font-size:11px;min-height:16px;margin-bottom:4px;}
+.up-st.ok{color:var(--acid);} .up-st.err{color:var(--hot);}
+.or-div{font-size:9px;font-weight:700;color:var(--grey2);text-align:center;letter-spacing:.1em;text-transform:uppercase;margin:6px 0;}
+.vrow{display:flex;gap:8px;}
+.vrow .fi{flex:1;}
+.bver{padding:9px 12px;flex-shrink:0;border-radius:6px;cursor:pointer;border:1.5px solid var(--border2);background:transparent;font-family:"DM Sans",sans-serif;font-size:11px;font-weight:700;color:var(--grey);white-space:nowrap;transition:all .2s;}
+.bver:hover{border-color:var(--acid);color:var(--acid);}
+.bver.ok{border-color:var(--acid);color:var(--acid);background:rgba(202,255,0,.08);}
+.vc-box{margin-top:8px;background:var(--card);border:1.5px solid var(--border2);border-radius:8px;padding:12px 14px;display:none;}
+.vc-msg{font-family:"DM Sans",sans-serif;font-size:12px;color:#ccc;margin-bottom:10px;}
+.vc-btns{display:flex;gap:8px;}
+.vc-yes{flex:1;padding:8px;background:var(--acid);border:none;border-radius:6px;font-family:"Syne",sans-serif;font-weight:700;font-size:12px;color:var(--black);cursor:pointer;}
+.vc-no{padding:8px 14px;background:transparent;border:1.5px solid var(--border);border-radius:6px;font-size:11px;color:var(--grey);cursor:pointer;font-family:"DM Sans",sans-serif;}
+.btn-save{width:100%;padding:14px;background:var(--acid);border:none;border-radius:6px;font-family:"Syne",sans-serif;font-weight:800;font-size:18px;letter-spacing:.02em;color:var(--black);cursor:pointer;transition:all .2s;margin-bottom:10px;}
+.btn-save:hover{background:#D4FF20;} .btn-save:disabled{opacity:.4;cursor:not-allowed;}
+.btn-skip{width:100%;padding:12px;background:transparent;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-family:"DM Mono",monospace;color:var(--grey);cursor:pointer;transition:all .2s;}
+.btn-skip:hover{border-color:var(--white);color:var(--white);}
+.merr{font-size:12px;font-weight:500;color:var(--hot);margin-bottom:12px;display:none;background:rgba(255,60,172,.07);padding:10px 14px;border-radius:6px;font-family:"DM Mono",monospace;}
+.mok{font-size:12px;font-weight:500;color:var(--acid);margin-bottom:12px;display:none;background:rgba(202,255,0,.07);padding:10px 14px;border-radius:6px;font-family:"DM Mono",monospace;}
+
+/* MAP */
+#sm{z-index:5;}
+#map{position:absolute;inset:0;background:var(--black);}
+.leaflet-top .leaflet-control-zoom{margin-top:90px!important;}
+.leaflet-control-zoom a{background:var(--card2)!important;color:var(--white)!important;border-color:var(--border2)!important;}
+.leaflet-control-zoom a:hover{background:var(--border2)!important;}
+.leaflet-control-attribution{background:rgba(0,0,0,.5)!important;color:var(--grey2)!important;font-size:9px!important;}
+.leaflet-control-attribution a{color:var(--grey2)!important;}
+.leaflet-popup-content-wrapper{background:var(--card2)!important;border:1px solid var(--border2)!important;border-radius:10px!important;box-shadow:0 8px 24px rgba(0,0,0,.8)!important;padding:0!important;overflow:hidden;}
+.leaflet-popup-tip{background:var(--card2)!important;}
+.leaflet-popup-content{margin:0!important;}
+.leaflet-popup-close-button{color:var(--grey)!important;top:10px!important;right:12px!important;font-size:16px!important;}
+
+/* NAV */
+#mtb{position:absolute;top:0;left:0;right:0;height:52px;background:rgba(10,10,10,.97);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:500;backdrop-filter:blur(12px);}
+.mtb-logo{font-family:"Syne",sans-serif;font-weight:800;font-size:20px;letter-spacing:-.02em;color:var(--white);}
+.mtb-logo .ed{color:var(--acid);}
+.mtb-r{display:flex;align-items:center;gap:10px;}
+.mtb-c{font-family:"DM Mono",monospace;font-size:11px;color:var(--grey);}
+.mtb-c b{color:var(--acid);}
+.mtb-w{font-family:"DM Mono",monospace;font-size:10px;color:var(--grey);background:var(--card);border:1px solid var(--border);padding:4px 10px;border-radius:4px;}
+@media(max-width:600px){.mtb-w{display:none;}}
+
+/* STATS BAR */
+#sbar{position:absolute;top:52px;left:0;right:0;height:32px;background:rgba(10,10,10,.92);border-bottom:1px solid var(--border);display:flex;align-items:center;z-index:499;backdrop-filter:blur(8px);}
+.sb-i{display:flex;align-items:center;gap:5px;padding:0 14px;border-right:1px solid var(--border);font-size:10px;color:var(--grey);font-family:"DM Mono",monospace;flex:1;justify-content:center;white-space:nowrap;}
+.sb-i:last-child{border-right:none;}
+.sb-n{color:var(--acid);font-weight:700;font-size:12px;}
+
+/* FILTER BAR */
+#fbar{position:absolute;top:84px;left:0;right:0;height:42px;background:rgba(10,10,10,.9);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 14px;overflow-x:auto;overflow-y:hidden;z-index:498;backdrop-filter:blur(8px);}
+#fbar::-webkit-scrollbar{display:none;}
+.f-btn{padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:transparent;font-family:"DM Mono",monospace;font-size:10px;font-weight:600;color:var(--grey);cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.f-btn:hover{border-color:var(--acid);color:var(--acid);}
+.f-btn.active{background:rgba(202,255,0,.1);}
+
+/* PANELS */
+.panel{position:absolute;top:126px;bottom:0;width:min(300px,85vw);background:rgba(10,10,10,.97);z-index:490;display:flex;flex-direction:column;transition:transform .3s cubic-bezier(.16,1,.3,1);}
+.panel.left{left:0;border-right:1px solid var(--border);transform:translateX(-100%);}
+.panel.right{right:0;border-left:1px solid var(--border);transform:translateX(100%);}
+.panel.open{transform:translateX(0);}
+.ph{padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.ph-title{font-family:"Syne",sans-serif;font-weight:800;font-size:16px;color:var(--white);}
+.ph-close{background:none;border:none;color:var(--grey);font-size:18px;cursor:pointer;padding:2px 6px;}
+.ph-close:hover{color:var(--white);}
+.pb{flex:1;overflow-y:auto;}
+.pb::-webkit-scrollbar{width:3px;}
+.pb::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* LEADERBOARD */
+.lb-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(34,34,34,.6);cursor:pointer;transition:background .15s;}
+.lb-row:hover{background:rgba(202,255,0,.04);}
+.lb-rank{font-family:"Syne",sans-serif;font-weight:800;font-size:14px;width:22px;text-align:center;flex-shrink:0;}
+.lb-pfp{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--border);background:var(--card);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.lb-pfp img{width:100%;height:100%;object-fit:cover;}
+.lb-info{flex:1;min-width:0;}
+.lb-name{font-family:"Syne",sans-serif;font-weight:700;font-size:12px;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:4px;}
+.lb-loc{font-size:10px;color:var(--grey);font-family:"DM Mono",monospace;margin-top:1px;}
+.lb-dots{display:flex;gap:3px;flex-shrink:0;}
+.lb-dot{width:8px;height:8px;border-radius:50%;}
+
+/* ACTIVITY */
+.af-row{display:flex;align-items:flex-start;gap:9px;padding:9px 14px;border-bottom:1px solid rgba(34,34,34,.4);animation:slideR .4s ease both;}
+.af-pfp{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--card);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;}
+.af-pfp img{width:100%;height:100%;object-fit:cover;}
+.af-name{font-family:"Syne",sans-serif;font-weight:700;font-size:11px;color:var(--white);}
+.af-desc{font-size:10px;color:var(--grey);margin-top:1px;font-family:"DM Mono",monospace;}
+.empty-state{padding:24px;text-align:center;font-family:"DM Mono",monospace;font-size:11px;color:var(--grey2);}
+
+/* PANEL TOGGLES */
+.ptgl{position:absolute;z-index:491;background:rgba(10,10,10,.9);border:1px solid var(--border);padding:9px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s;}
+.ptgl.ptgl-l{left:0;top:150px;border-radius:0 8px 8px 0;}
+.ptgl.ptgl-r{right:0;top:150px;border-radius:8px 0 0 8px;}
+.ptgl:hover,.ptgl.on{border-color:var(--acid);background:rgba(202,255,0,.05);}
+.ptgl svg{width:16px;height:16px;}
+.ptgl-lbl{font-family:"DM Mono",monospace;font-size:8px;font-weight:700;color:var(--grey);letter-spacing:.08em;text-transform:uppercase;}
+.af-bdg{background:var(--acid);color:var(--black);font-family:"DM Mono",monospace;font-size:8px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 3px;align-items:center;justify-content:center;position:absolute;top:-6px;right:-6px;display:none;}
+.af-bdg.on{display:flex;}
+
+/* LEGEND */
+#leg{position:absolute;bottom:90px;left:16px;background:rgba(10,10,10,.92);border:1px solid var(--border);border-radius:8px;padding:10px 14px;z-index:500;}
+.leg-t{font-family:"DM Mono",monospace;font-size:8px;font-weight:700;color:var(--grey);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px;}
+.leg-r{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.leg-r:last-child{margin-bottom:0;}
+.leg-d{width:9px;height:9px;border-radius:50%;border:2px solid;flex-shrink:0;}
+.leg-l{font-size:10px;color:var(--grey);font-family:"DM Mono",monospace;}
+
+/* POPUP */
+.ppbox{padding:14px;width:224px;}
+.pp-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.pp-av{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden;}
+.pp-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.pp-name{font-family:"Syne",sans-serif;font-size:13px;font-weight:700;color:var(--white);display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.pp-loc{font-size:10px;color:var(--grey);font-family:"DM Mono",monospace;margin-top:1px;}
+.pp-bio{font-size:11px;color:#888;line-height:1.5;margin-bottom:8px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.pp-cl{font-family:"DM Mono",monospace;font-size:8px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--grey);margin-bottom:5px;}
+.pp-crow{display:flex;align-items:center;gap:7px;font-size:11px;color:#888;font-family:"DM Mono",monospace;margin-bottom:3px;}
+.pp-cdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.pp-tw{display:block;padding-top:6px;border-top:1px solid var(--border);font-size:10px;color:var(--grey);text-decoration:none;font-family:"DM Mono",monospace;}
+.pp-tw:hover{color:var(--acid);}
+.vbadge{font-family:"DM Mono",monospace;font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;}
+.vbadge-tw{background:rgba(29,161,242,.1);border:1px solid rgba(29,161,242,.3);color:#1DA1F2;}
+.vbadge-dc{background:rgba(88,101,242,.1);border:1px solid rgba(88,101,242,.3);color:#5865F2;}
+
+/* MY PROFILE BTN */
+#mbtn{display:none;position:absolute;bottom:28px;right:14px;z-index:500;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,.6);transition:border-color .2s;}
+#mbtn:hover{border-color:var(--acid);}
+#mbtn.on{display:flex;}
+#mbtn-img{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--acid);object-fit:cover;display:none;}
+#mbtn-n{font-family:"Syne",sans-serif;font-weight:700;font-size:11px;color:var(--white);}
+#mbtn-s{font-family:"DM Mono",monospace;font-size:9px;color:var(--grey);}
+
+/* PINS */
+.pin-ring{position:relative;width:44px;height:44px;border-radius:50%;padding:2.5px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 14px rgba(0,0,0,.7);}
+.pin-inner{width:100%;height:100%;border-radius:50%;overflow:hidden;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.pin-inner img{width:100%;height:100%;object-fit:cover;}
+.pin-badge{position:absolute;bottom:-1px;right:-1px;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--black);font-size:8px;font-weight:700;color:var(--black);font-family:"DM Mono",monospace;display:flex;align-items:center;justify-content:center;z-index:2;}
+
+/* TOAST */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--card2);border:1.5px solid var(--border2);border-radius:50px;padding:10px 22px;font-family:"DM Mono",monospace;font-size:12px;font-weight:600;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;color:var(--white);box-shadow:0 4px 20px rgba(0,0,0,.4);}
+#toast.on{opacity:1;}
+#toast.ok{border-color:var(--acid);color:var(--acid);}
+#toast.err{border-color:var(--hot);color:var(--hot);}
+.spinner{display:inline-block;width:14px;height:14px;border:2.5px solid rgba(0,0,0,.2);border-top-color:var(--black);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div class="screen" id="sl">
+  <div class="l-glow"></div>
+  <div class="l-logo">PINN<span class="ed">ED</span></div>
+  <div class="l-tag">The NFT Social Map</div>
+  <button class="btn-main" id="btn-conn">Drop Your Pin</button>
+  <button class="btn-explore" id="btn-explore">Explore the map &rarr;</button>
+  <a class="btn-mm" id="btn-mm" href="#">&#128241; Open in MetaMask</a>
+  <div class="l-err" id="l-err"></div>
+  <div class="l-stats">
+    <div class="l-stat"><div class="ls-n" id="lcount">&mdash;</div><div class="ls-l">Holders</div></div>
+    <div class="l-stat"><div class="ls-n" id="lcountries">&mdash;</div><div class="ls-l">Countries</div></div>
+    <div class="l-stat"><div class="ls-n" id="lcols">&mdash;</div><div class="ls-l">Collections</div></div>
+  </div>
+  <div class="l-soc">
+    <a class="soc-a" href="https://x.com" target="_blank">&#120143; Twitter</a>
+    <a class="soc-a" href="https://discord.com" target="_blank">&#128172; Discord</a>
+  </div>
+</div>
+
+<!-- WALLET SELECTOR (hidden by default) -->
+<div class="w-overlay" id="w-overlay" style="display:none;">
+  <div class="w-modal">
+    <div class="w-title">Choose Wallet</div>
+    <div id="w-list"></div>
+    <button class="w-cancel" id="w-cancel">Cancel</button>
+  </div>
+</div>
+
+<!-- CHECKING -->
+<div class="screen hidden" id="sc">
+  <div class="c-logo">PINN<span class="ed">ED</span></div>
+  <div class="c-ring"></div>
+  <div class="c-msg" id="cmsg">Connecting...</div>
+</div>
+
+<!-- PROFILE -->
+<div class="screen hidden" id="sp">
+  <div class="ptb">
+    <div class="ptb-logo">PINN<span class="ed">ED</span></div>
+    <div class="ptb-w" id="ptb-w"></div>
+  </div>
+  <div class="pfc">
+    <div class="pf-title">Set Up Your<br><span class="ac">Profile</span></div>
+    <div class="pf-sub">You&rsquo;ll appear as a pin on the map</div>
+    <!-- Verified collection badges shown here -->
+    <div class="vcol-badges" id="vcol-badges"></div>
+    <!-- Avatar -->
+    <div class="fb">
+      <div class="pfp-row">
+        <div class="pfp-c" id="pfp-prev">&#128100;</div>
+        <div style="flex:1;">
+          <label class="btn-upload" id="upload-lbl">
+            &#128247; Upload Image or GIF
+            <input type="file" id="f-pfp-file" accept="image/*,.gif" style="display:none;">
+          </label>
+          <div class="up-st" id="up-st"></div>
+          <div class="or-div">or paste a URL</div>
+          <input class="fi" type="url" id="f-pfp" placeholder="https://...">
+        </div>
+      </div>
+    </div>
+    <div class="fb"><label class="fl">Username *</label><input class="fi" type="text" id="f-user" placeholder="cryptowanderer" maxlength="24"></div>
+    <div class="fb"><label class="fl">Bio</label><textarea class="fta" id="f-bio" placeholder="Tell the community about yourself..." maxlength="160"></textarea></div>
+    <!-- Twitter -->
+    <div class="fb">
+      <label class="fl">Twitter / X</label>
+      <div class="vrow"><input class="fi" type="text" id="f-tw" placeholder="@handle"><button class="bver" id="bvtw">Verify</button></div>
+      <div class="vc-box" id="vc-tw"><div class="vc-msg" id="vc-tw-msg"></div><div class="vc-btns"><button class="vc-yes" id="vc-tw-y">&#10003; Yes, that&rsquo;s me</button><button class="vc-no" id="vc-tw-n">Cancel</button></div></div>
+    </div>
+    <!-- Discord -->
+    <div class="fb">
+      <label class="fl">Discord</label>
+      <div class="vrow"><input class="fi" type="text" id="f-discord" placeholder="username"><button class="bver" id="bvdc">Verify</button></div>
+      <div class="vc-box" id="vc-dc"><div class="vc-msg" id="vc-dc-msg"></div><div class="vc-btns"><button class="vc-yes" id="vc-dc-y">&#10003; Yes, that&rsquo;s me</button><button class="vc-no" id="vc-dc-n">Cancel</button></div></div>
+    </div>
+    <div class="fr2">
+      <div class="fb"><label class="fl">Country *</label><input class="fi" type="text" id="f-country" placeholder="United States" list="clist"><datalist id="clist"></datalist></div>
+      <div class="fb"><label class="fl">State / Region</label><input class="fi" type="text" id="f-state" placeholder="South Carolina"></div>
+    </div>
+    <div class="fdiv"></div>
+    <div class="merr" id="ferr"></div>
+    <div class="mok"  id="fok"></div>
+    <button class="btn-save" id="savebtn"><span id="savetxt">Drop My Pin</span></button>
+    <button class="btn-skip" id="btn-skip">Skip &mdash; just view the map</button>
+  </div>
+</div>
+
+<!-- MAP -->
+<div class="screen hidden" id="sm">
+  <div id="map"></div>
+  <div id="mtb">
+    <div class="mtb-logo">PINN<span class="ed">ED</span></div>
+    <div class="mtb-r">
+      <div class="mtb-c"><b id="mcount">0</b> on the map</div>
+      <div class="mtb-w" id="mwallet"></div>
+    </div>
+  </div>
+  <div id="sbar">
+    <div class="sb-i"><span class="sb-n" id="sh">0</span>&nbsp;Holders</div>
+    <div class="sb-i"><span class="sb-n" id="sc2">0</span>&nbsp;Countries</div>
+    <div class="sb-i"><span class="sb-n" id="scol">0</span>&nbsp;Collections</div>
+  </div>
+  <div id="fbar"><button class="f-btn active" id="f-all">All</button></div>
+  <!-- Leaderboard panel -->
+  <div class="panel left" id="plb">
+    <div class="ph"><div class="ph-title">&#127942; Top Holders</div><button class="ph-close" id="clb">&#x2715;</button></div>
+    <div class="pb" id="lb-body"></div>
+  </div>
+  <!-- Activity panel -->
+  <div class="panel right" id="paf">
+    <div class="ph"><div class="ph-title">&#9889; Live Activity</div><button class="ph-close" id="caf">&#x2715;</button></div>
+    <div class="pb" id="af-body"><div class="empty-state">Waiting for activity&hellip;</div></div>
+  </div>
+  <!-- Toggle buttons -->
+  <button class="ptgl ptgl-l" id="tgl-lb">
+    <svg viewBox="0 0 24 24" fill="#CAFF00"><path d="M3 3h4v18H3zm7 6h4v12h-4zm7-3h4v15h-4z"/></svg>
+    <span class="ptgl-lbl">Board</span>
+  </button>
+  <button class="ptgl ptgl-r" id="tgl-af">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#CAFF00" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span class="ptgl-lbl">Live</span>
+    <div class="af-bdg" id="af-bdg">0</div>
+  </button>
+  <div id="leg"><div class="leg-t">Collections</div><div id="leg-rows"></div></div>
+  <div id="mbtn">
+    <img id="mbtn-img" src="" onerror="this.style.display='none'">
+    <div><div id="mbtn-n">My Profile</div><div id="mbtn-s">Edit</div></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+var SB_URL  = "https://dreqaqfqipnrjiqdutaf.supabase.co";
+var SB_KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyZXFhcWZxaXBucmppcWR1dGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzA5NzIsImV4cCI6MjA5NjEwNjk3Mn0.b7itB8_BmfzJYcbOe9jAZwBys7bmjDpR_Bzpsg9R15U";
+var ALK_KEY = "LfW0EF1Fxqryrev5jTu4H";
+
+/* ── GEOCODE DATA ── */
+var CC = {"United States":{lat:37.09,lng:-95.71},"USA":{lat:37.09,lng:-95.71},"United Kingdom":{lat:51.50,lng:-0.12},"UK":{lat:51.50,lng:-0.12},"Canada":{lat:56.13,lng:-106.34},"Australia":{lat:-25.27,lng:133.77},"Germany":{lat:51.16,lng:10.45},"France":{lat:46.22,lng:2.21},"Japan":{lat:36.20,lng:138.25},"South Korea":{lat:35.90,lng:127.76},"Brazil":{lat:-14.23,lng:-51.92},"Mexico":{lat:23.63,lng:-102.55},"Netherlands":{lat:52.13,lng:5.29},"Spain":{lat:40.46,lng:-3.74},"Italy":{lat:41.87,lng:12.56},"Sweden":{lat:60.12,lng:18.64},"Norway":{lat:60.47,lng:8.46},"Denmark":{lat:56.26,lng:9.50},"Switzerland":{lat:46.81,lng:8.22},"Poland":{lat:51.91,lng:19.14},"Portugal":{lat:39.39,lng:-8.22},"Argentina":{lat:-38.41,lng:-63.61},"India":{lat:20.59,lng:78.96},"China":{lat:35.86,lng:104.19},"Singapore":{lat:1.35,lng:103.81},"Nigeria":{lat:9.08,lng:8.67},"South Africa":{lat:-30.55,lng:22.93},"UAE":{lat:23.42,lng:53.84},"Turkey":{lat:38.96,lng:35.24},"Russia":{lat:61.52,lng:105.31},"Philippines":{lat:12.87,lng:121.77},"Indonesia":{lat:-0.78,lng:113.92},"Thailand":{lat:15.87,lng:100.99},"New Zealand":{lat:-40.90,lng:174.88},"Ireland":{lat:53.41,lng:-8.24},"Belgium":{lat:50.50,lng:4.46},"Greece":{lat:39.07,lng:21.82},"Israel":{lat:31.04,lng:34.85},"Colombia":{lat:4.57,lng:-74.29},"Chile":{lat:-35.67,lng:-71.54},"Vietnam":{lat:14.05,lng:108.27},"Malaysia":{lat:4.21,lng:101.97},"Pakistan":{lat:30.37,lng:69.34},"Egypt":{lat:26.82,lng:30.80},"Saudi Arabia":{lat:23.88,lng:45.08},"Ghana":{lat:7.94,lng:-1.02},"Kenya":{lat:-0.02,lng:37.90}};
+var SC = {"Alabama":{lat:32.80,lng:-86.79},"Alaska":{lat:64.20,lng:-153.39},"Arizona":{lat:34.04,lng:-111.09},"Arkansas":{lat:34.79,lng:-92.19},"California":{lat:36.77,lng:-119.41},"Colorado":{lat:39.11,lng:-105.35},"Connecticut":{lat:41.59,lng:-72.74},"Florida":{lat:27.99,lng:-81.76},"Georgia":{lat:32.16,lng:-82.90},"Hawaii":{lat:19.89,lng:-155.58},"Idaho":{lat:44.24,lng:-114.47},"Illinois":{lat:40.34,lng:-88.98},"Indiana":{lat:40.27,lng:-86.13},"Iowa":{lat:41.87,lng:-93.09},"Kansas":{lat:38.52,lng:-96.72},"Kentucky":{lat:37.66,lng:-84.67},"Louisiana":{lat:31.16,lng:-91.86},"Maine":{lat:44.69,lng:-69.38},"Maryland":{lat:39.04,lng:-76.64},"Massachusetts":{lat:42.23,lng:-71.53},"Michigan":{lat:44.31,lng:-85.60},"Minnesota":{lat:46.72,lng:-93.90},"Mississippi":{lat:32.74,lng:-89.67},"Missouri":{lat:38.45,lng:-92.28},"Montana":{lat:46.87,lng:-110.36},"Nebraska":{lat:41.49,lng:-99.90},"Nevada":{lat:38.80,lng:-116.41},"New Hampshire":{lat:43.19,lng:-71.57},"New Jersey":{lat:40.05,lng:-74.40},"New Mexico":{lat:34.84,lng:-106.24},"New York":{lat:42.16,lng:-74.94},"North Carolina":{lat:35.63,lng:-79.80},"Ohio":{lat:40.38,lng:-82.99},"Oklahoma":{lat:35.56,lng:-96.92},"Oregon":{lat:43.80,lng:-120.55},"Pennsylvania":{lat:41.20,lng:-77.19},"South Carolina":{lat:33.85,lng:-80.94},"Tennessee":{lat:35.74,lng:-86.69},"Texas":{lat:31.96,lng:-99.90},"Utah":{lat:39.32,lng:-111.09},"Virginia":{lat:37.76,lng:-78.16},"Washington":{lat:47.75,lng:-120.74},"Wisconsin":{lat:44.26,lng:-89.61},"Wyoming":{lat:43.07,lng:-107.29}};
+
+/* ── STATE ── */
+var sb, MAP, wallet, activeProvider, myProfile, markers={}, mapReady=false;
+var activeFilters=[], collections=[], profiles=[], afCount=0, twV=false, dcV=false;
+
+/* ── BOOT ── */
+sb = window.supabase.createClient(SB_URL, SB_KEY);
+// Populate country datalist
+Object.keys(CC).filter(function(k){return k.length>3;}).forEach(function(c){
+  var o=document.createElement("option"); o.value=c;
+  document.getElementById("clist").appendChild(o);
+});
+loadLandingStats();
+bindEvents();
+
+function bindEvents(){
+  document.getElementById("btn-conn").addEventListener("click", openWalletSelector);
+  document.getElementById("btn-explore").addEventListener("click", function(){ showMap(); });
+  document.getElementById("w-cancel").addEventListener("click", function(){ document.getElementById("w-overlay").style.display="none"; });
+  document.getElementById("savebtn").addEventListener("click", saveProfile);
+  document.getElementById("btn-skip").addEventListener("click", showMap);
+  document.getElementById("mbtn").addEventListener("click", editProfile);
+  document.getElementById("f-pfp").addEventListener("input", function(){ prevPfp(this.value); });
+  document.getElementById("f-pfp-file").addEventListener("change", handleUpload);
+  document.getElementById("bvtw").addEventListener("click", function(){ startVerify("tw"); });
+  document.getElementById("bvdc").addEventListener("click", function(){ startVerify("dc"); });
+  document.getElementById("vc-tw-y").addEventListener("click", function(){ confirmVerify("tw"); });
+  document.getElementById("vc-tw-n").addEventListener("click", function(){ document.getElementById("vc-tw").style.display="none"; });
+  document.getElementById("vc-dc-y").addEventListener("click", function(){ confirmVerify("dc"); });
+  document.getElementById("vc-dc-n").addEventListener("click", function(){ document.getElementById("vc-dc").style.display="none"; });
+  document.getElementById("tgl-lb").addEventListener("click", function(){ togglePanel("lb"); });
+  document.getElementById("tgl-af").addEventListener("click", function(){
+    togglePanel("af");
+    afCount=0; document.getElementById("af-bdg").textContent="0";
+    document.getElementById("af-bdg").classList.remove("on");
+  });
+  document.getElementById("clb").addEventListener("click", function(){ togglePanel("lb"); });
+  document.getElementById("caf").addEventListener("click", function(){ togglePanel("af"); });
+  document.getElementById("f-all").addEventListener("click", function(){
+    activeFilters=[]; renderFilterBar(); loadMarkers();
+  });
+  if(isMobile()&&!hasMM()){
+    var el=document.getElementById("btn-mm");
+    el.href="https://metamask.app.link/dapp/"+window.location.href.replace(/^https?:\/\//,"");
+    el.style.display="inline-block";
+  }
+}
+
+/* ── WALLET ── */
+function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+function hasMM(){ return typeof window.ethereum!=="undefined"; }
+
+function getWallets(){
+  var wallets=[];
+  var mm=null, okx=null;
+  if(window.ethereum&&window.ethereum.providers&&window.ethereum.providers.length){
+    mm  = window.ethereum.providers.find(function(p){ return p.isMetaMask&&!p.isBraveWallet; })||null;
+    okx = window.ethereum.providers.find(function(p){ return p.isOKExWallet||p.isOKXWallet; })||null;
+  } else {
+    if(window.ethereum&&window.ethereum.isMetaMask&&!window.ethereum.isBraveWallet) mm=window.ethereum;
+    if(window.okxwallet) okx=window.okxwallet;
+  }
+  if(mm)  wallets.push({id:"metamask",name:"MetaMask",  icon:"https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg",provider:mm});
+  if(okx) wallets.push({id:"okx",     name:"OKX Wallet",icon:"https://static.okx.com/cdn/assets/imgs/247/58E63FEA47A2B7D7.png",provider:okx});
+  return wallets;
+}
+
+function openWalletSelector(){
+  if(isMobile()&&!hasMM()){ window.location.href="https://metamask.app.link/dapp/"+window.location.href.replace(/^https?:\/\//,""); return; }
+  var wallets=getWallets();
+  if(!wallets.length){
+    if(window.ethereum&&window.ethereum.isBraveWallet) showLandErr("Brave Wallet detected. Install MetaMask or OKX Wallet.");
+    else showLandErr("No wallet found. Install MetaMask or OKX Wallet.");
+    return;
+  }
+  if(wallets.length===1){ connectWith(wallets[0]); return; }
+  // Show selector
+  var list=document.getElementById("w-list"); list.innerHTML="";
+  wallets.forEach(function(w){
+    var btn=document.createElement("button");
+    btn.className="w-btn";
+    var ico=document.createElement("img"); ico.className="w-btn-ico"; ico.src=w.icon;
+    var nm=document.createElement("div");  nm.className="w-btn-name"; nm.textContent=w.name;
+    btn.appendChild(ico); btn.appendChild(nm);
+    btn.addEventListener("click", function(){ document.getElementById("w-overlay").style.display="none"; connectWith(w); });
+    list.appendChild(btn);
+  });
+  document.getElementById("w-overlay").style.display="flex";
+}
+
+async function connectWith(w){
+  activeProvider=w.provider;
+  var btn=document.getElementById("btn-conn");
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Connecting...';
+  document.getElementById("l-err").style.display="none";
+  try{
+    var accounts=await w.provider.request({method:"eth_requestAccounts"});
+    if(!accounts||!accounts.length) throw new Error("No accounts");
+    wallet=accounts[0];
+    document.getElementById("ptb-w").textContent=wallet.slice(0,6)+"..."+wallet.slice(-4);
+    document.getElementById("mwallet").textContent=wallet.slice(0,6)+"..."+wallet.slice(-4);
+    showScreen("sc");
+    document.getElementById("cmsg").textContent="Loading your profile...";
+    var existing=await getProfileByWallet(wallet);
+    if(existing){
+      myProfile=existing; showMap();
+      setTimeout(function(){ showMyBtn(existing); loadMarkers(); if(existing.latitude) MAP&&MAP.flyTo([existing.latitude,existing.longitude],6,{duration:1.5}); toast("Welcome back, "+existing.username+"!","ok"); },400);
+    } else {
+      document.getElementById("cmsg").textContent="Verifying your NFTs...";
+      await loadCollections();
+      await doVerification();
+      showScreen("sp");
+    }
+  } catch(e){
+    btn.textContent="Drop Your Pin"; btn.disabled=false;
+    if(e.code!==4001) showLandErr("Error: "+(e.message||"Try again."));
+  }
+}
+
+function showLandErr(msg){ var e=document.getElementById("l-err"); e.textContent=msg; e.style.display="block"; }
+
+/* ── COLLECTIONS & VERIFICATION ── */
+async function loadCollections(){
+  var r=await sb.from("collections").select("*").eq("active",true).order("added_at",{ascending:true});
+  collections=r.data||[];
+}
+
+async function doVerification(){
+  window._verifiedIds=[];
+  for(var i=0;i<collections.length;i++){
+    var col=collections[i];
+    if(!col.contract_address) continue;
+    try{
+      var r=await fetch("https://eth-mainnet.g.alchemy.com/nft/v3/"+ALK_KEY+"/isHolderOfCollection?wallet="+wallet+"&contractAddress="+col.contract_address);
+      var d=await r.json();
+      if(d.isHolderOfCollection) window._verifiedIds.push(col.id);
+    }catch(e){}
+  }
+  // Show verified badges in profile form
+  var bw=document.getElementById("vcol-badges"); bw.innerHTML="";
+  window._verifiedIds.forEach(function(id){
+    var col=collections.find(function(c){return c.id===id;});
+    if(!col) return;
+    var s=document.createElement("span"); s.className="vcol-badge";
+    s.textContent=col.name;
+    s.style.cssText="border-color:"+col.color+";background:"+col.color+"18;color:"+col.color+";";
+    bw.appendChild(s);
+  });
+}
+
+/* ── SUPABASE HELPERS ── */
+async function getProfileByWallet(w){
+  var r=await sb.from("profiles").select("*, wallet_collections(collection_id, collections(id,name,color))").eq("wallet_address",w.toLowerCase()).maybeSingle();
+  return r.data||null;
+}
+
+/* ── LANDING STATS ── */
+async function loadLandingStats(){
+  try{
+    var[pr,cr]=await Promise.all([
+      sb.from("profiles").select("id,location_country",{count:"exact"}),
+      sb.from("collections").select("*").eq("active",true)
+    ]);
+    collections=cr.data||[];
+    var p=pr.data||[];
+    var ctries=new Set(p.map(function(x){return x.location_country;}).filter(Boolean));
+    document.getElementById("lcount").textContent=pr.count||0;
+    document.getElementById("lcountries").textContent=ctries.size;
+    document.getElementById("lcols").textContent=collections.length;
+  }catch(e){}
+}
+
+/* ── AVATAR ── */
+function prevPfp(url){
+  var el=document.getElementById("pfp-prev");
+  if(url){var img=document.createElement("img");img.src=url;img.onerror=function(){el.textContent="&#128100;";}; el.innerHTML=""; el.appendChild(img);}
+  else{el.textContent="&#128100;";}
+}
+
+async function handleUpload(){
+  var file=this.files[0]; if(!file) return;
+  if(file.size>5*1024*1024){setUpSt("Too large (max 5MB)","err"); return;}
+  setUpSt("Uploading...","");
+  try{
+    var ext=file.name.split(".").pop().toLowerCase();
+    var fn=wallet.toLowerCase()+"_"+Date.now()+"."+ext;
+    var r=await sb.storage.from("avatars").upload(fn,file,{cacheControl:"3600",upsert:true,contentType:file.type});
+    if(r.error) throw r.error;
+    var url=sb.storage.from("avatars").getPublicUrl(fn).data.publicUrl;
+    document.getElementById("f-pfp").value=url; prevPfp(url);
+    setUpSt("Uploaded!","ok");
+  }catch(e){setUpSt("Upload failed","err");}
+}
+function setUpSt(msg,cls){var el=document.getElementById("up-st"); el.textContent=msg; el.className="up-st"+(cls?" "+cls:"");}
+
+/* ── VERIFY TWITTER / DISCORD ── */
+function startVerify(type){
+  if(type==="tw"){
+    var h=document.getElementById("f-tw").value.trim(); if(!h){toast("Enter your handle first","err");return;}
+    document.getElementById("vc-tw-msg").textContent='Is "'+h+'" your Twitter / X?';
+    document.getElementById("vc-tw").style.display="block";
+  }else{
+    var h=document.getElementById("f-discord").value.trim(); if(!h){toast("Enter your username first","err");return;}
+    document.getElementById("vc-dc-msg").textContent='Is "'+h+'" your Discord?';
+    document.getElementById("vc-dc").style.display="block";
+  }
+}
+function confirmVerify(type){
+  if(type==="tw"){twV=true;var b=document.getElementById("bvtw");b.textContent="&#10003; Verified";b.classList.add("ok");document.getElementById("vc-tw").style.display="none";}
+  else{dcV=true;var b=document.getElementById("bvdc");b.textContent="&#10003; Verified";b.classList.add("ok");document.getElementById("vc-dc").style.display="none";}
+}
+
+/* ── SAVE PROFILE ── */
+async function saveProfile(){
+  var fe=document.getElementById("ferr"),fo=document.getElementById("fok"),btn=document.getElementById("savebtn");
+  fe.style.display="none"; fo.style.display="none";
+  var username=document.getElementById("f-user").value.trim();
+  var bio=document.getElementById("f-bio").value.trim();
+  var tw=document.getElementById("f-tw").value.trim();
+  var dc=document.getElementById("f-discord").value.trim();
+  var pfp=document.getElementById("f-pfp").value.trim();
+  var country=document.getElementById("f-country").value.trim();
+  var state=document.getElementById("f-state").value.trim();
+  if(!username){fe.textContent="Username is required.";fe.style.display="block";return;}
+  if(!country){fe.textContent="Country is required.";fe.style.display="block";return;}
+  btn.disabled=true; document.getElementById("savetxt").innerHTML='<span class="spinner"></span>Saving...';
+  var coords=getCoords(country,state)||await nominatim(country,state)||{lat:0,lng:0};
+  var data={wallet_address:wallet.toLowerCase(),username:username,bio:bio,twitter_handle:tw,discord_handle:dc,avatar_url:pfp,location_country:country,location_state:state,latitude:coords.lat,longitude:coords.lng,twitter_verified:twV,discord_verified:dcV};
+  try{
+    var r=await sb.from("profiles").upsert(data,{onConflict:"wallet_address"}).select().single();
+    if(r.error) throw r.error;
+    myProfile=r.data;
+    // Save verified collections
+    if(window._verifiedIds&&window._verifiedIds.length){
+      await sb.from("wallet_collections").delete().eq("wallet_address",wallet.toLowerCase());
+      var rows=window._verifiedIds.map(function(id){return{wallet_address:wallet.toLowerCase(),collection_id:id};});
+      await sb.from("wallet_collections").insert(rows);
+    }
+    fo.textContent="You're on the map! &#128205;"; fo.style.display="block";
+    toast("Pin dropped!","ok");
+    setTimeout(function(){showMap();setTimeout(function(){loadMarkers();showMyBtn(myProfile);if(coords.lat)MAP&&MAP.flyTo([coords.lat,coords.lng],6,{duration:1.8});},400);},1200);
+  }catch(e){fe.textContent=e.message||"Failed to save.";fe.style.display="block";}
+  btn.disabled=false; document.getElementById("savetxt").textContent=myProfile?"Update Profile":"Drop My Pin";
+}
+
+function editProfile(){
+  if(!myProfile) return;
+  twV=myProfile.twitter_verified||false; dcV=myProfile.discord_verified||false;
+  document.getElementById("f-pfp").value    =myProfile.avatar_url||"";
+  document.getElementById("f-user").value   =myProfile.username||"";
+  document.getElementById("f-bio").value    =myProfile.bio||"";
+  document.getElementById("f-tw").value     =myProfile.twitter_handle||"";
+  document.getElementById("f-discord").value=myProfile.discord_handle||"";
+  document.getElementById("f-country").value=myProfile.location_country||"";
+  document.getElementById("f-state").value  =myProfile.location_state||"";
+  if(myProfile.avatar_url) prevPfp(myProfile.avatar_url);
+  if(twV){var b=document.getElementById("bvtw");b.textContent="&#10003; Verified";b.classList.add("ok");}
+  if(dcV){var b=document.getElementById("bvdc");b.textContent="&#10003; Verified";b.classList.add("ok");}
+  window._verifiedIds=(myProfile.wallet_collections||[]).map(function(wc){return wc.collection_id;});
+  doVerification();
+  document.getElementById("ferr").style.display="none";
+  document.getElementById("fok").style.display="none";
+  document.getElementById("savetxt").textContent="Update Profile";
+  showScreen("sp");
+}
+
+/* ── MAP ── */
+function showMap(){
+  showScreen("sm");
+  if(!mapReady){mapReady=true;setTimeout(initMap,100);}
+  else setTimeout(function(){MAP&&MAP.invalidateSize();},200);
+}
+
+function initMap(){
+  var bounds=L.latLngBounds(L.latLng(-75,-220),L.latLng(83,220));
+  MAP=L.map("map",{center:[25,10],zoom:2,minZoom:2,maxZoom:15,maxBounds:bounds,maxBoundsViscosity:1.0,worldCopyJump:false,bounceAtZoomLimits:false,zoomControl:false});
+  L.control.zoom({position:"bottomleft"}).addTo(MAP);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{attribution:"&copy; OpenStreetMap &copy; CARTO",subdomains:"abcd",maxZoom:18}).addTo(MAP);
+  MAP.on("drag",function(){MAP.panInsideBounds(bounds,{animate:false});});
+  loadMarkers();
+  setupRealtime();
+  renderFilterBar();
+}
+
+async function loadMarkers(){
+  if(!MAP||!sb) return;
+  try{
+    var res=await sb.from("profiles").select("*, wallet_collections(collection_id, collections(id,name,color))");
+    if(res.error) throw res.error;
+    profiles=res.data||[];
+    Object.values(markers).forEach(function(m){MAP.removeLayer(m);});
+    markers={};
+    var filtered=activeFilters.length===0?profiles:profiles.filter(function(p){
+      var ids=(p.wallet_collections||[]).map(function(wc){return wc.collection_id;});
+      return activeFilters.every(function(f){return ids.includes(f);});
+    });
+    filtered.forEach(addMarker);
+    updateStats(profiles);
+    buildLeaderboard(profiles);
+    renderLegend();
+  }catch(e){console.warn("loadMarkers:",e);}
+}
+
+function addMarker(p){
+  if(!p.latitude||!p.longitude) return;
+  var cols=(p.wallet_collections||[]).map(function(wc){return wc.collections;}).filter(Boolean);
+  var hc=cols[0]||{color:"#CAFF00"};
+  var ringStyle;
+  if(!cols.length){ringStyle="border:2.5px solid #CAFF00;";}
+  else if(cols.length===1){ringStyle="border:2.5px solid "+hc.color+";";}
+  else{var seg=360/cols.length;var stops=cols.map(function(c,i){return(c.color||"#CAFF00")+" "+(i*seg)+"deg "+((i+1)*seg)+"deg";}).join(",");ringStyle="background:conic-gradient("+stops+");padding:2.5px;";}
+  var inner=p.avatar_url?'<img src="'+p.avatar_url+'" onerror="this.outerHTML='&#128100;'" style="width:100%;height:100%;object-fit:cover;">':'&#128100;';
+  var badgeHtml=cols.length?'<div class="pin-badge" style="background:'+(hc.color||"#CAFF00")+';">'+cols.length+'</div>':'';
+  var html='<div class="pin-ring" style="'+ringStyle+'"><div class="pin-inner">'+inner+'</div>'+badgeHtml+'</div>';
+  var icon=L.divIcon({className:"",html:html,iconSize:[44,44],iconAnchor:[22,22],popupAnchor:[0,-28]});
+  // Popup
+  var colHtml=cols.map(function(c){return'<div class="pp-crow"><span class="pp-cdot" style="background:'+(c.color||"#CAFF00")+'"></span>'+c.name+'</div>';}).join("");
+  var avEl=p.avatar_url?'<img src="'+p.avatar_url+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.outerHTML='&#128100;'>':'&#128100;';
+  var badges=(p.twitter_verified?'<span class="vbadge vbadge-tw">&#120143;</span>':'')+(p.discord_verified?'<span class="vbadge vbadge-dc">DC</span>':'');
+  var loc=[p.location_state,p.location_country].filter(Boolean).join(", ");
+  var twHtml=p.twitter_handle?'<a class="pp-tw" href="https://x.com/'+p.twitter_handle.replace("@","")+'" target="_blank">&#120143; '+p.twitter_handle+'</a>':'';
+  var pop='<div class="ppbox">'
+    +'<div class="pp-top"><div class="pp-av">'+avEl+'</div><div><div class="pp-name">'+(p.username||"Anon")+badges+'</div><div class="pp-loc">&#128205; '+loc+'</div></div></div>'
+    +(p.bio?'<div class="pp-bio">'+p.bio+'</div>':'')
+    +(colHtml?'<div class="pp-cl">Collections</div>'+colHtml:'')
+    +twHtml
+    +'</div>';
+  var m=L.marker([p.latitude,p.longitude],{icon:icon});
+  m.bindPopup(pop,{maxWidth:250});
+  m.addTo(MAP);
+  markers[p.id]=m;
+}
+
+function updateStats(data){
+  var ctries=new Set(data.map(function(p){return p.location_country;}).filter(Boolean));
+  document.getElementById("sh").textContent=data.length;
+  document.getElementById("sc2").textContent=ctries.size;
+  document.getElementById("scol").textContent=collections.length;
+  document.getElementById("mcount").textContent=data.length;
+  document.getElementById("lcount").textContent=data.length;
+  document.getElementById("lcountries").textContent=ctries.size;
+}
+
+function renderFilterBar(){
+  var bar=document.getElementById("fbar");
+  while(bar.children.length>1) bar.removeChild(bar.lastChild);
+  document.getElementById("f-all").className="f-btn"+(activeFilters.length===0?" active":"");
+  document.getElementById("f-all").style.cssText=activeFilters.length===0?"border-color:#CAFF00;color:#CAFF00;background:rgba(202,255,0,.1);":"";
+  collections.forEach(function(col){
+    var btn=document.createElement("button");
+    var isActive=activeFilters.includes(col.id);
+    btn.className="f-btn"+(isActive?" active":"");
+    btn.textContent=col.name;
+    if(isActive) btn.style.cssText="border-color:"+col.color+";color:"+col.color+";background:"+col.color+"15;";
+    btn.addEventListener("click",function(){
+      if(activeFilters.includes(col.id)) activeFilters=activeFilters.filter(function(f){return f!==col.id;});
+      else activeFilters.push(col.id);
+      renderFilterBar(); loadMarkers();
+    });
+    bar.appendChild(btn);
+  });
+}
+
+function renderLegend(){
+  var rows=document.getElementById("leg-rows"); rows.innerHTML="";
+  if(!collections.length){document.getElementById("leg").style.display="none";return;}
+  document.getElementById("leg").style.display="block";
+  collections.forEach(function(col){
+    var r=document.createElement("div"); r.className="leg-r";
+    var d=document.createElement("div"); d.className="leg-d"; d.style.borderColor=col.color||"#CAFF00";
+    var l=document.createElement("div"); l.className="leg-l"; l.textContent=col.name;
+    r.appendChild(d); r.appendChild(l); rows.appendChild(r);
+  });
+}
+
+function buildLeaderboard(data){
+  var body=document.getElementById("lb-body"); body.innerHTML="";
+  var sorted=data.slice().sort(function(a,b){return((b.wallet_collections||[]).length)-((a.wallet_collections||[]).length);});
+  if(!sorted.length){var em=document.createElement("div");em.className="empty-state";em.textContent="No holders yet";body.appendChild(em);return;}
+  sorted.forEach(function(p,i){
+    var row=document.createElement("div"); row.className="lb-row";
+    row.addEventListener("click",function(){
+      if(p.latitude&&p.longitude){MAP.flyTo([p.latitude,p.longitude],7,{duration:1.2});togglePanel("lb");}
+    });
+    var rank=document.createElement("div"); rank.className="lb-rank";
+    rank.style.color=i===0?"#F5FF00":i===1?"#C0C0C0":i===2?"#CD7F32":"#333";
+    rank.textContent=i+1;
+    var pfpD=document.createElement("div"); pfpD.className="lb-pfp";
+    if(p.avatar_url){var img=document.createElement("img");img.src=p.avatar_url;img.onerror=function(){pfpD.textContent="&#128100;";};pfpD.appendChild(img);}
+    else pfpD.textContent="&#128100;";
+    var info=document.createElement("div"); info.className="lb-info";
+    var nm=document.createElement("div"); nm.className="lb-name"; nm.textContent=p.username||"Anon";
+    if(p.twitter_verified){var tw=document.createElement("span");tw.className="vbadge vbadge-tw";tw.textContent="&#120143;";nm.appendChild(tw);}
+    if(p.discord_verified){var dc=document.createElement("span");dc.className="vbadge vbadge-dc";dc.textContent="DC";nm.appendChild(dc);}
+    var loc=document.createElement("div"); loc.className="lb-loc";
+    loc.textContent="&#128205; "+[p.location_state,p.location_country].filter(Boolean).join(", ");
+    info.appendChild(nm); info.appendChild(loc);
+    var dots=document.createElement("div"); dots.className="lb-dots";
+    (p.wallet_collections||[]).forEach(function(wc){
+      var d=document.createElement("div"); d.className="lb-dot";
+      d.style.background=(wc.collections&&wc.collections.color)||"#CAFF00";
+      d.title=wc.collections&&wc.collections.name||"";
+      dots.appendChild(d);
+    });
+    row.appendChild(rank); row.appendChild(pfpD); row.appendChild(info); row.appendChild(dots);
+    body.appendChild(row);
+  });
+}
+
+function showMyBtn(p){
+  document.getElementById("mbtn-n").textContent=p.username||"My Profile";
+  document.getElementById("mbtn-s").textContent="Edit profile";
+  if(p.avatar_url){var i=document.getElementById("mbtn-img");i.src=p.avatar_url;i.style.display="block";}
+  document.getElementById("mbtn").classList.add("on");
+}
+
+function setupRealtime(){
+  sb.channel("pinned_rt")
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"profiles"},function(x){addActivity(x.new,"joined");loadMarkers();})
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles"},function(x){addActivity(x.new,"updated");loadMarkers();})
+    .subscribe();
+}
+
+function addActivity(p,type){
+  var body=document.getElementById("af-body");
+  var em=body.querySelector(".empty-state"); if(em) em.remove();
+  var row=document.createElement("div"); row.className="af-row";
+  var pfpD=document.createElement("div"); pfpD.className="af-pfp";
+  if(p.avatar_url){var img=document.createElement("img");img.src=p.avatar_url;img.onerror=function(){pfpD.textContent="&#128100;";};pfpD.appendChild(img);}
+  else pfpD.textContent="&#128100;";
+  var text=document.createElement("div");
+  var nm=document.createElement("div"); nm.className="af-name"; nm.textContent=p.username||"Anon";
+  var ds=document.createElement("div"); ds.className="af-desc";
+  ds.textContent=type==="joined"?"joined the map"+(p.location_country?" from "+p.location_country:""):"updated their profile";
+  text.appendChild(nm); text.appendChild(ds);
+  row.appendChild(pfpD); row.appendChild(text);
+  body.insertBefore(row,body.firstChild);
+  if(!document.getElementById("paf").classList.contains("open")){
+    afCount++; document.getElementById("af-bdg").textContent=afCount;
+    document.getElementById("af-bdg").classList.add("on");
+  }
+}
+
+function togglePanel(id){
+  var p=document.getElementById("p"+id);
+  var t=document.getElementById("tgl-"+id);
+  var open=p.classList.contains("open");
+  document.querySelectorAll(".panel").forEach(function(x){x.classList.remove("open");});
+  document.querySelectorAll(".ptgl").forEach(function(x){x.classList.remove("on");});
+  if(!open){p.classList.add("open");t.classList.add("on");}
+}
+
+/* ── GEOCODE ── */
+function jitter(){return(Math.random()-.5)*2.5;}
+function getCoords(country,state){
+  var ck=Object.keys(CC).find(function(k){return k.toLowerCase()===country.toLowerCase();});
+  if(state){var sk=Object.keys(SC).find(function(k){return k.toLowerCase()===state.toLowerCase();});if(sk)return{lat:SC[sk].lat+jitter(),lng:SC[sk].lng+jitter()};}
+  if(ck)return{lat:CC[ck].lat+jitter(),lng:CC[ck].lng+jitter()};
+  return null;
+}
+async function nominatim(country,state){
+  var q=[state,country].filter(Boolean).join(", ");
+  try{var r=await fetch("https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(q)+"&limit=1");var d=await r.json();if(d&&d[0])return{lat:parseFloat(d[0].lat)+jitter(),lng:parseFloat(d[0].lon)+jitter()};}catch(e){}
+  return null;
+}
+
+/* ── SCREENS & TOAST ── */
+function showScreen(id){
+  ["sl","sc","sp","sm"].forEach(function(s){document.getElementById(s).classList[s===id?"remove":"add"]("hidden");});
+  if(id==="sm"&&!mapReady){mapReady=true;setTimeout(initMap,100);}
+}
+var tt;
+function toast(msg,type){
+  var el=document.getElementById("toast");
+  el.innerHTML=msg; el.className="on"+(type?" "+type:"");
+  clearTimeout(tt); tt=setTimeout(function(){el.className="";},3000);
+}
+</script>
+</body>
+</html>
