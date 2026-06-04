@@ -530,6 +530,7 @@ html,body { width:100%; height:100%; overflow:hidden; background:var(--w); color
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 /* ── CONFIG ── */
+var OWNER_WALLET = "0x773daacda9e4d7c7955bcef1fbf807d318501f44"; // your wallet — bypasses collection gates
 var SB_URL  = "https://dreqaqfqipnrjiqdutaf.supabase.co";
 var SB_KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyZXFhcWZxaXBucmppcWR1dGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzA5NzIsImV4cCI6MjA5NjEwNjk3Mn0.b7itB8_BmfzJYcbOe9jAZwBys7bmjDpR_Bzpsg9R15U";
 
@@ -902,9 +903,12 @@ async function loadMarkers() {
     Object.values(markers).forEach(function(m){ MAP.removeLayer(m); });
     markers = {};
 
+    var isOwner = wallet && wallet.toLowerCase() === OWNER_WALLET.toLowerCase();
     var filtered = activeFilters.length === 0
       ? profiles
       : profiles.filter(function(p){
+          // Owner sees all pins regardless of filter
+          if(isOwner && p.wallet_address === wallet.toLowerCase()) return true;
           var ids = p.wallet_collections.map(function(wc){ return wc.collection_id; });
           return activeFilters.every(function(f){ return ids.includes(f); });
         });
@@ -1105,6 +1109,8 @@ async function nominatim(country,state){
 
 /* ── SILENT RE-VERIFY (runs in background on login) ── */
 async function silentReVerify(walletAddr) {
+  // Owner wallet skips verification — has access to all filters by default
+  if(walletAddr.toLowerCase() === OWNER_WALLET.toLowerCase()) return;
   try {
     // Call server-side API route — avoids CORS issues with Alchemy
     var res = await fetch("/api/verify-holdings?wallet=" + walletAddr);
