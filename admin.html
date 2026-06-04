@@ -218,6 +218,17 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var sb = window.supabase.createClient(SB_URL, SB_KEY);
 var pw = "";
 
+async function callAdmin(action, data) {
+  var res = await fetch("/api/admin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: pw, action: action, data: data })
+  });
+  var json = await res.json();
+  if (!res.ok) throw new Error(json.error || "Request failed");
+  return json;
+}
+
 // Color sync
 document.getElementById("c-color-pick").addEventListener("input", function(){ document.getElementById("c-color").value = this.value; });
 document.getElementById("c-color").addEventListener("input", function(){ if(/^#[0-9A-Fa-f]{6}$/.test(this.value)) document.getElementById("c-color-pick").value = this.value; });
@@ -292,14 +303,14 @@ async function loadCollections() {
     var tog = document.createElement("button"); tog.className="btn-sm btn-toggle";
     tog.textContent = col.active ? "Disable" : "Enable";
     tog.addEventListener("click", async function(){
-      await sb.from("collections").update({active:!col.active}).eq("id",col.id);
+      await callAdmin("toggle_collection", {id:col.id, active:!col.active});
       loadCollections(); loadStats();
     });
 
     var del = document.createElement("button"); del.className="btn-sm btn-delete"; del.textContent="Delete";
     del.addEventListener("click", async function(){
       if(!confirm('Delete "'+col.name+'"? This removes all verified holdings for this collection.')) return;
-      await sb.from("collections").delete().eq("id",col.id);
+      await callAdmin("delete_collection", {id:col.id});
       loadCollections(); loadStats();
     });
 
@@ -323,11 +334,10 @@ document.getElementById("btn-add").addEventListener("click", async function(){
   if(!name||!slug) { showMsg("Name and slug are required.","err"); return; }
   this.disabled=true; this.textContent="Adding...";
   try {
-    var r = await sb.from("collections").insert({
+    await callAdmin("add_collection", {
       name, slug, contract_address:contract||null, chain, color,
       logo_url:logo||null, website:website||null, twitter:twitter||null, active:true
-    }).select().single();
-    if(r.error) throw r.error;
+    });
     showMsg(name + " added successfully!", "ok");
     ["c-name","c-slug","c-contract","c-logo","c-website","c-twitter"].forEach(function(id){
       document.getElementById(id).value="";
