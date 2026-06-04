@@ -640,7 +640,7 @@ async function connectWith(w) {
     var existing = await getProfileByWallet(wallet);
     if(existing) {
       myProfile=existing; showMap();
-      setTimeout(function(){ showMyBtn(existing); loadMapData(); if(existing.latitude) MAP&&MAP.flyTo([existing.latitude,existing.longitude],6,{duration:1.5}); toast("Welcome back, "+existing.username+"!"); }, 400);
+      setTimeout(function(){ showMyBtn(existing); loadMapData(); if(existing.latitude != null) MAP&&MAP.flyTo([existing.latitude,existing.longitude],6,{duration:1.5}); toast("Welcome back, "+existing.username+"!"); }, 400);
     } else {
       document.getElementById("cmsg").textContent = "Verifying your NFTs...";
       await loadCollections();
@@ -789,7 +789,7 @@ async function saveProfile() {
     }
     fo.textContent="You're on the map!"; fo.style.display="block";
     toast("Pin dropped!");
-    setTimeout(function(){ showMap(); setTimeout(function(){ loadMapData(); showMyBtn(myProfile); if(coords.lat) MAP&&MAP.flyTo([coords.lat,coords.lng],6,{duration:1.8}); },400); },1200);
+    setTimeout(function(){ showMap(); setTimeout(function(){ loadMapData(); showMyBtn(myProfile); if(coords.lat != null) MAP&&MAP.flyTo([coords.lat,coords.lng],6,{duration:1.8}); },400); },1200);
   } catch(e){ fe.textContent=e.message||"Failed to save."; fe.style.display="block"; }
   btn.disabled=false; document.getElementById("savetxt").textContent=myProfile?"Update Profile":"Drop My Pin";
 }
@@ -867,7 +867,7 @@ async function loadMarkers() {
 }
 
 function addMarker(p) {
-  if(!p.latitude||!p.longitude) return;
+  if(p.latitude == null || p.longitude == null) return;
   var cols=(p.wallet_collections||[]).map(function(wc){return wc.collections;}).filter(Boolean);
   var hc=cols[0]||{color:"#888"};
   var ringStyle;
