@@ -547,22 +547,37 @@ bindEvents();
 
 /* ── CHECK EXISTING SESSION ── */
 async function checkExistingSession() {
+  // 1. Try localStorage first (fastest)
   var stored = localStorage.getItem("pinned_wallet");
+
+  // 2. If not in localStorage, silently check if wallet is already connected
+  //    eth_accounts returns connected accounts with NO permission prompt
+  if(!stored) {
+    try {
+      var prov = getProvider();
+      if(prov) {
+        var accounts = await prov.request({ method: "eth_accounts" });
+        if(accounts && accounts.length) {
+          stored = accounts[0];
+          localStorage.setItem("pinned_wallet", stored);
+        }
+      }
+    } catch(e){}
+  }
+
   if(!stored) return;
+
   try {
     var p = await getProfileByWallet(stored);
     if(p) {
       wallet = stored;
       myProfile = p;
+      document.getElementById("mwallet").textContent = wallet.slice(0,6)+"..."+wallet.slice(-4);
+      document.getElementById("ptb-w").textContent   = wallet.slice(0,6)+"..."+wallet.slice(-4);
       var el = document.getElementById("l-welcome");
-      el.textContent = "Welcome back, " + p.username;
+      el.textContent = "Welcome back, " + p.username + " —";
       el.style.display = "block";
-      document.getElementById("btn-conn").textContent = "Go to Map";
-      document.getElementById("btn-conn").addEventListener("click", function() {
-        playClick();
-        showMap();
-        setTimeout(function(){ loadMapData(); showMyBtn(p); if(p.latitude) MAP&&MAP.flyTo([p.latitude,p.longitude],6,{duration:1.5}); }, 400);
-      }, {once:true});
+      document.getElementById("btn-conn").textContent = "Go to Map →";
     }
   } catch(e){}
 }
@@ -573,8 +588,16 @@ function bindEvents() {
   connBtn.addEventListener("mouseenter", playHover);
   connBtn.addEventListener("click", function(){
     playClick();
-    if(myProfile && wallet) { showMap(); setTimeout(function(){ loadMapData(); showMyBtn(myProfile); }, 400); }
-    else openWalletSelector();
+    if(myProfile && wallet) {
+      showMap();
+      setTimeout(function(){
+        loadMapData();
+        showMyBtn(myProfile);
+        if(myProfile.latitude) MAP&&MAP.flyTo([myProfile.latitude,myProfile.longitude],6,{duration:1.5});
+      }, 400);
+    } else {
+      openWalletSelector();
+    }
   });
 
   document.getElementById("w-cancel").addEventListener("click", function(){ playClick(); document.getElementById("w-overlay").classList.remove("open"); });
